@@ -20,7 +20,7 @@
 
 /* Override external b_pop() definition with internal one. */
 #undef   b_pop
-#define  b_pop()  b_internal_pop(FALSE)
+#define  b_pop()  b_internal_pop(FALSE)/
 
 
 #define errfp stderr
