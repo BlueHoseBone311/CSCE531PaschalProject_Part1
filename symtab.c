@@ -692,7 +692,7 @@ static char *alloc_str(int n)
 **  Notes:
 */
 
-static ST_BUCKET_REC *alloc_hash_rec(void)
+static ST_BUCKET_REC *alloc_hash_rec(void)build_varbuild_var
 
 {
     ST_BUCKET_REC *retbr;

@@ -162,16 +162,16 @@ optional_par_id_list:
   ;
 
 id_list:
-    new_identifier
-  | id_list ',' new_identifier
+    new_identifier                 {$$  = build_var_id_list(NULL, $1);}
+  | id_list ',' new_identifier     {$$ = build_var_id_list($1, $3);}
   ;
 
 typename:
-    LEX_ID
+    LEX_ID    {$$ = check_typename(st_enter_id($1));}
   ;
 
 identifier:
-    LEX_ID
+    LEX_ID    {$$ = st_enter_id($1);}
   ;
 
 new_identifier:
@@ -179,7 +179,7 @@ new_identifier:
   ;
 
 new_identifier_1:
-    LEX_ID
+    LEX_ID     {$$ = st_enter_id($1);}
 /* Standard Pascal constants */
   | p_MAXINT
   | p_FALSE
@@ -316,7 +316,7 @@ type_definition_list:
   ;
 
 type_definition:
-    new_identifier '=' type_denoter
+    new_identifier '=' type_denoter   {$$ = create_typename($1, $3);}
   ;
 
 type_denoter:
@@ -486,7 +486,7 @@ variable_declaration_list:
   ;
 
 variable_declaration:
-    id_list ':' type_denoter semi
+    id_list ':' type_denoter semi   creat
   ;
 
 function_declaration:
@@ -511,7 +511,7 @@ directive:
 
 functiontype:
     /* empty */
-  | ':' typename
+  | ':' typename  {$$ = check_function_type($2);}
   ;
 
 /* parameter specification section */
