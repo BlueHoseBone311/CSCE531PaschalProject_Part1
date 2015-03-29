@@ -144,8 +144,8 @@ void yyerror(const char *);
 
 /* Pascal parser starts here */
 
-pascal_program:
-    main_program_declaration '.'
+pascal_program:                     
+    main_program_declaration '.'    {}
   ;
 
 main_program_declaration:
@@ -248,9 +248,9 @@ any_decl:
   ;
 
 simple_decl:
-    constant_definition_part
-  | type_definition_part
-  | variable_declaration_part
+    constant_definition_part    {}
+  | type_definition_part        {}
+  | variable_declaration_part   
   ;
 
 /* constant definition part */
@@ -269,15 +269,15 @@ constant_definition:
   ;
 
 constant:
-    identifier
-  | sign identifier
-  | number
+    identifier             {}  
+  | sign identifier        {} 
+  | number                
   | constant_literal
   ;
 
 number:
-    sign unsigned_number
-  | unsigned_number
+    sign unsigned_number      {$$ = make_unop($1, $2);}
+  | unsigned_number           
   ;
 
 unsigned_number:
@@ -394,17 +394,17 @@ new_structured_type:
 /* Array */
 
 array_type:
-    LEX_ARRAY '[' array_index_list ']' LEX_OF type_denoter
+    LEX_ARRAY '[' array_index_list ']' LEX_OF type_denoter   {$$ = check_array($6, $3);}
   ;
 
 array_index_list:
-    ordinal_index_type
-  | array_index_list ',' ordinal_index_type
+    ordinal_index_type                        {$$ = create_list_from_type($1);}
+  | array_index_list ',' ordinal_index_type   {$$ = concat_index_list($1,$3);} 
   ;
 
 
 ordinal_index_type:
-    new_ordinal_type
+    new_ordinal_type         
   | typename
   ;
 
@@ -486,7 +486,7 @@ variable_declaration_list:
   ;
 
 variable_declaration:
-    id_list ':' type_denoter semi   creat
+    id_list ':' type_denoter semi   {create_gdecl($1, $3);}
   ;
 
 function_declaration:
@@ -510,7 +510,7 @@ directive:
   ;
 
 functiontype:
-    /* empty */
+    /* empty */   {} 
   | ':' typename  {$$ = check_function_type($2);}
   ;
 
