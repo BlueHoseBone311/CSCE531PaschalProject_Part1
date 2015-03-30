@@ -1,4 +1,4 @@
-/*A Bison parser for the programming language Pascal.
+/*A Bison parser for the programming lang language Pascal.
   Copyright (C) 1989-2002 Free Software Foundation, Inc.
 
   Authors: Jukka Virtanen <jtv@hut.fi>
@@ -145,7 +145,7 @@ void yyerror(const char *);
 /* Pascal parser starts here */
 
 pascal_program:                     
-    main_program_declaration '.'    {}
+    main_program_declaration '.'    
   ;
 
 main_program_declaration:
@@ -272,11 +272,11 @@ constant:
     identifier             {}  
   | sign identifier        {} 
   | number                
-  | constant_literal
+  | constant_literal         
   ;
 
 number:
-    sign unsigned_number      {$$ = make_unop($1, $2);}
+    sign unsigned_number      
   | unsigned_number           
   ;
 
@@ -307,7 +307,7 @@ string:
   ;
 
 type_definition_part:
-    LEX_TYPE type_definition_list semi
+    LEX_TYPE type_definition_list semi   {resolve_all_ptr();}
   ;
 
 type_definition_list:
@@ -328,8 +328,8 @@ type_denoter:
   ;
 
 new_ordinal_type:
-    enumerated_type
-  | subrange_type
+    enumerated_type      {}
+  | subrange_type  
   ;
 
 enumerated_type:
@@ -346,11 +346,11 @@ enumerator:
   ;
 
 subrange_type:
-    constant LEX_RANGE constant
+    constant LEX_RANGE constant   {$$ = check_subrange($1, $3);}
   ;
 
 new_pointer_type:
-    pointer_char pointer_domain_type
+    pointer_char pointer_domain_type    {$$ = $2;}
   ;
 
 pointer_char:
@@ -359,36 +359,36 @@ pointer_char:
   ;
 
 pointer_domain_type:
-    new_identifier
-  | new_procedural_type
+    new_identifier           {$$ = ty_build_ptr($1, NULL);}
+  | new_procedural_type      {$$ = ty_build_ptr(NULL, $1);}  
   ;
 
 new_procedural_type:
-    LEX_PROCEDURE optional_procedural_type_formal_parameter_list
-  | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype
+    LEX_PROCEDURE optional_procedural_type_formal_parameter_list              {$$ = ty_build_func(ty_build_basic(TYVOID), $2, TRUE);}
+  | LEX_FUNCTION optional_procedural_type_formal_parameter_list functiontype  {$$ = ty_build_func($3, $2, TRUE);}
   ;
 
 optional_procedural_type_formal_parameter_list:
-    /* empty */
-  | '(' procedural_type_formal_parameter_list ')'
+    /* empty */                                     {$$ = NULL;}
+  | '(' procedural_type_formal_parameter_list ')'  {$$ = check_param($2);}
   ;
 
 procedural_type_formal_parameter_list:
     procedural_type_formal_parameter
-  | procedural_type_formal_parameter_list semi procedural_type_formal_parameter
+  | procedural_type_formal_parameter_list semi procedural_type_formal_parameter {$$ = concat_param_list($1, $3);}
   ;
 
 procedural_type_formal_parameter:
-    id_list
-  | id_list ':' typename
-  | LEX_VAR id_list ':' typename
-  | LEX_VAR id_list
+    id_list                    {$$=build_param_list($1,ty_build_basic(TYERROR),FALSE);}                   
+  | id_list ':' typename        {$$ = build_param_list($1, $3, FALSE);}
+  | LEX_VAR id_list ':' typename {$$ = build_param_list($2, $4, TRUE);}
+  | LEX_VAR id_list              {$$=build_param_list($2,ty_build_basic(TYERROR),TRUE);} /*this would be an error => treat as such */
   ;
 
 new_structured_type:
     array_type
-  | set_type
-  | record_type
+  | set_type       {}
+  | record_type    {} 
   ;
 
 /* Array */
