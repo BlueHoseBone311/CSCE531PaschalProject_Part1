@@ -62,16 +62,10 @@ void yyerror(const char *);
 
 /* The union representing a semantic stack entry */
 %union {
-    char *        y_string;
-    int	          y_cint;
-    long          y_int;
-    double        y_real;
-    VAR_ID_LIST   y_varidlist;
-    ST_ID         y_stid; 
-    INDEX_LIST	  y_indexlist;
-    PARAM_LIST    y_paramlist;  
-    TYPE          y_type; 
-    PARAM         y_param; 
+    char *   y_string;
+    int	     y_cint;
+    long     y_int;
+    double   y_real;
 }
 
 %token <y_string> LEX_ID
