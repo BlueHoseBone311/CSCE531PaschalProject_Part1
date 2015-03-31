@@ -78,5 +78,7 @@ void resolve_all_ptr();
  	An error message is issued for every unresolved pointer.
 */
 
+TYPE check_subrange(int low, int high); 	
+
 #endif
 

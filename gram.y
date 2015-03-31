@@ -48,6 +48,8 @@
 
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
+
+#include "types.h"
 #include "tree.h"
 
 void set_yydebug(int);
@@ -136,8 +138,8 @@ void yyerror(const char *);
 
 /*Explicit Typing*/
 %type <y_cint> variable_declaration simple_decl  
-%type <y_cint> constant number unsigned_number sign 
-%type <y_type> typename type_denoter type_denoter_1 
+%type <y_cint> constant number unsigned_number// sign 
+%type <y_type> typename type_denoter 
 %type <y_type> subrange_type new_procedural_type ordinal_index_type
 %type <y_type> array_type new_structured_type
 %type <y_type> functiontype new_pointer_type pointer_domain_type
@@ -201,55 +203,55 @@ new_identifier:
 new_identifier_1:
     LEX_ID     {$$ = st_enter_id($1);}
 /* Standard Pascal constants */
-  | p_MAXINT
-  | p_FALSE
-  | p_TRUE
+  | p_MAXINT	{}
+  | p_FALSE	{}
+  | p_TRUE	{}
 /* Standard Pascal I/O */
-  | p_INPUT
-  | p_OUTPUT
-  | p_REWRITE
-  | p_RESET
-  | p_PUT
-  | p_GET
-  | p_WRITE
-  | p_READ
-  | p_WRITELN
-  | p_READLN
-  | p_PAGE
-  | p_EOF
-  | p_EOLN
+  | p_INPUT	{}
+  | p_OUTPUT	{}
+  | p_REWRITE	{}
+  | p_RESET	{}
+  | p_PUT	{}
+  | p_GET	{}
+  | p_WRITE	{}
+  | p_READ	{}
+  | p_WRITELN	{}
+  | p_READLN	{}
+  | p_PAGE	{}
+  | p_EOF	{}
+  | p_EOLN	{}
 /* Standard Pascal heap handling */
-  | p_NEW
-  | p_DISPOSE
+  | p_NEW	{}
+  | p_DISPOSE	{}
 /* Standard Pascal arithmetic */
-  | p_ABS
-  | p_SQR
-  | p_SIN
-  | p_COS
-  | p_EXP
-  | p_LN
-  | p_SQRT
-  | p_ARCTAN
-  | p_TRUNC
-  | p_ROUND
+  | p_ABS	{}
+  | p_SQR	{}
+  | p_SIN	{}
+  | p_COS	{}
+  | p_EXP	{}
+  | p_LN	{}
+  | p_SQRT	{}
+  | p_ARCTAN	{}
+  | p_TRUNC	{}
+  | p_ROUND	{}
 /* Standard Pascal transfer functions */
-  | p_PACK
-  | p_UNPACK
+  | p_PACK	{}
+  | p_UNPACK	{}
 /* Standard Pascal ordinal functions */
-  | p_ORD
-  | p_CHR
-  | p_SUCC
-  | p_PRED
-  | p_ODD
+  | p_ORD	{}
+  | p_CHR	{}
+  | p_SUCC	{}
+  | p_PRED	{}
+  | p_ODD	{}
 /* Other extensions */
-  | BREAK
-  | CONTINUE
-  | RETURN_
-  | RESULT
-  | EXIT
-  | FAIL
-  | SIZEOF
-  | BITSIZEOF
+  | BREAK	{}
+  | CONTINUE	{}
+  | RETURN_	{}
+  | RESULT	{}
+  | EXIT	{}
+  | FAIL	{}
+  | SIZEOF	{}
+  | BITSIZEOF	{}
   ;
 
 any_global_declaration_part:
@@ -270,7 +272,7 @@ any_decl:
 simple_decl:
     constant_definition_part    {}
   | type_definition_part        {}
-  | variable_declaration_part   
+  | variable_declaration_part   {}
   ;
 
 /* constant definition part */
@@ -292,7 +294,7 @@ constant:
     identifier             {}  
   | sign identifier        {} 
   | number                
-  | constant_literal         
+  | constant_literal	   {}
   ;
 
 number:
@@ -335,8 +337,9 @@ type_definition_list:
   | type_definition_list semi type_definition
   ;
 
+//edited Venu 03/30 2147
 type_definition:
-    new_identifier '=' type_denoter   {$$ = create_typename($1, $3);}
+    new_identifier '=' type_denoter   {create_typename($1, $3);}
   ;
 
 type_denoter:
@@ -506,7 +509,7 @@ variable_declaration_list:
   ;
 
 variable_declaration:
-    id_list ':' type_denoter semi   {create_gdecl($1, $3);}
+    id_list ':' type_denoter semi   {create_gdecl($1, $3); encode_declaration ($3, $1);}
   ;
 
 function_declaration:
@@ -941,7 +944,7 @@ relational_operator:
   | LEX_GE
   | '='
   | '<'
-  | '>'
+  | '>'check_sub
   ;
 
 multiplying_operator:

@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <assert.h>
 #include "tree.h"
-#include "encode.h"
 #include <string.h>
+#include "encode.h"
+
 
 
 //Project 1 functions
@@ -18,6 +19,7 @@ void create_typename(ST_ID id,TYPE new_type)
 	//Fill the fields of the new symbol table data record
 	new_rec->tag=TYPENAME;
 	new_rec->u.typename.type=new_type;
+printf("using create_typename");
 
 	// Install the new data record in the symbol table
 	if (!st_install(id, new_rec)) {
@@ -97,7 +99,7 @@ TYPE check_typename(ST_ID id) {
 		return ty_build_basic(TYERROR);
 	}
 
-	return chcktype->u.typename.type;
+	return checktype->u.typename.type;
 
 }//end check_typename
 
@@ -145,6 +147,7 @@ VAR_ID_LIST build_var_id_list (VAR_ID_LIST list,ST_ID id)
   id_list = (VAR_ID_LIST) malloc(sizeof(VAR_ID));
 
   id_list->id = id;
+
   id_list->next = NULL;
 
   if (list!=NULL)
@@ -163,7 +166,7 @@ PARAM_LIST build_param_list(VAR_ID_LIST id_list,TYPE type,BOOLEAN value)
 
 	VAR_ID_LIST id_parm = id_list;
 	PARAM_LIST head = NULL;
-    PARAM_LIST new_parm;
+    PARAM_LIST new;
 
 	while(id_parm != NULL)
 	{
@@ -183,7 +186,7 @@ PARAM_LIST build_param_list(VAR_ID_LIST id_list,TYPE type,BOOLEAN value)
        id_parm = id_parm->next;
 	}//end while
 
-	return new_parm;
+	return new;
 
 }//end build_param_list
 
@@ -275,7 +278,7 @@ INDEX_LIST create_list_from_type(TYPE type)
 
 void resolve_all_ptr()
 {
-	int holder;
+/*	int holder;
 	ST_ID id;
 	ST_DR data_rec;
 	TYPE unres, temp, temp2;
@@ -284,7 +287,7 @@ void resolve_all_ptr()
 
 	while(unres!=NULL)
 	{
-		temp2 = ty_query_ptr(unres, &id, &temp);
+		temp2 = ty_query_ptr(unres, &id);
 		data_rec = st_lookup(id, &holder);
 		if (data_rec == NULL) {
 			error("Unresolved type name: \"%s\"", st_get_id_str(id));
@@ -302,9 +305,23 @@ void resolve_all_ptr()
 		}
 		unres=temp;
 	}//end while
-
+*/
 }//end resolve_all_ptr
 
 
 
-
+TYPE check_subrange(int low, int high)
+{
+      TYPE subrange;
+      if(low > high)
+      {
+         error("Lower index is greater than Higher index.");
+         subrange = ty_build_basic(TYERROR);
+       }
+      else
+      {
+         subrange = ty_build_subrange(ty_build_basic(TYSIGNEDLONGINT), low, high);
+      }
+      
+      return subrange;
+}
