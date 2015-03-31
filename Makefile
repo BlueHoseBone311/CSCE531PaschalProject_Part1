@@ -36,7 +36,7 @@ CFLAGS = -g
 #
 BACKEND = backend-x86
 
-PPC3H	= defs.h types.h symtab.h tree.h $(BACKEND).h
+PPC3H	= defs.h types.h symtab.h $(BACKEND).h tree.h 
 
 PPC3OBJ = main.o message.o symtab.o types.o utils.o gram.o scan.o tree.o encode.o $(BACKEND).o 
 
@@ -51,7 +51,7 @@ main.o: main.c defs.h types.h symtab.h
 
 tree.o: tree.c tree.h encode.h types.h message.h symtab.h
 
-encode.o: encode.c encode.h tree.h
+encode.o: encode.c encode.h 
 
 types.o: types.c types.h symtab.h message.h
 
@@ -63,7 +63,7 @@ message.o: message.c message.h defs.h
 
 utils.o: utils.c symtab.h message.h defs.h $(BACKEND).h
 
-gram.o : gram.y $(PPC3H)
+gram.o : gram.y $(PPC3H) encode.h
 	$(YACC) $(YFLAGS) gram.y
 	$(CC) $(CFLAGS) -c y.tab.c
 	mv y.tab.o gram.o
