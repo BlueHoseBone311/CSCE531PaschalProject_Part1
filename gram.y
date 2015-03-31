@@ -48,6 +48,7 @@
 
 /* Cause the `yydebug' variable to be defined.  */
 #define YYDEBUG 1
+#include "tree.h"
 
 void set_yydebug(int);
 void yyerror(const char *);
@@ -134,20 +135,18 @@ void yyerror(const char *);
 %token p_DATE p_TIME LEX_RENAME LEX_IMPORT LEX_USES LEX_QUALIFIED LEX_ONLY
 
 /*Explicit Typing*/
-%type <y_cint> variable_declaration_part variable_declaration_list
-%type <y_cint> variable_declaration simple_decl any_decl any_declaration_part
-%type <y_string> new_identifier_1 string combined_string
-%type <y_type> typename type_denoter type_denoter_1 new_ordinal_type
+%type <y_cint> variable_declaration simple_decl  
+%type <y_cint> constant number unsigned_number sign 
+%type <y_type> typename type_denoter type_denoter_1 
 %type <y_type> subrange_type new_procedural_type ordinal_index_type
-%type <y_type> array_type unpacked_structured_type new_structured_type
+%type <y_type> array_type new_structured_type
 %type <y_type> functiontype new_pointer_type pointer_domain_type
-%type <y_type> parameter_form
 %type <y_paramlist> optional_procedural_type_formal_parameter_list
 %type <y_paramlist> procedural_type_formal_parameter_list
 %type <y_paramlist> procedural_type_formal_parameter
 %type <y_indexlist> array_index_list
-%type <y_stid> identifier new_identifier
-%type <y_varidlist> id_list optional_par_id_list
+%type <y_stid> identifier new_identifier new_identifier_1
+%type <y_varidlist> id_list 
 
 /* Precedence rules */
 
@@ -380,8 +379,8 @@ pointer_char:
   ;
 
 pointer_domain_type:
-    new_identifier           {$$ = ty_build_ptr($1, NULL);}
-  | new_procedural_type      {$$ = ty_build_ptr(NULL, $1);}  
+    new_identifier           {$$ = ty_build_ptr($1);}
+  | new_procedural_type      {$$ = ty_build_ptr($1);}  
   ;
 
 new_procedural_type:

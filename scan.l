@@ -7,11 +7,12 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include "tree.h"
 #include "defs.h"
 #include "types.h"
 #include "symtab.h"
 #include "message.h"
+
 /* defined in defs.h */
 #include BACKEND_HEADER_FILE
 #include "y.tab.h"
