@@ -11,8 +11,14 @@ static TYPE get_subrange_align_element(TYPE query_type);
 void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 {
 
-	if (ty_query(type)==TYERROR) return;
-	if (ty_query(type)==TYFUNC) return;
+	if (ty_query(type)==TYERROR) 
+	{	
+		return;
+	}	
+	if (ty_query(type)==TYFUNC) 
+	{	
+		return;
+	}	
 
 	while (varlist_id) 
 	{
@@ -24,7 +30,10 @@ void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 		TYPETAG tag;
 		TYPE base_type; 
 
-		if (!id)bug("Oops! ST_ID Received is Null\n");
+		if (!id)
+		{	
+			bug("Oops! ST_ID Received is Null\n");
+		}	
 
 		tag = ty_query(type);
 		if(tag == TYARRAY) 
@@ -188,46 +197,45 @@ unsigned int encode_get_base_size (TYPE type)
 
 static int calc_array_size(TYPE array_type, int align) 
 {
-	long lower; 
-	long upper;
+	long low; 
+	long high;
 	TYPE indc_type; 
 	TYPE type;
 	unsigned int align_size = align;
 	INDEX_LIST indices;
 	
-
 	type = array_type;
+
 	while (ty_query(type) == TYARRAY) 
 	{
 		type = ty_query_array(type, &indices);
 		while (indices != NULL) 
 		{ 
-			indc_type = ty_query_subrange(indices->type,&lower,&upper);
-			align_size *= upper - lower + 1;
+			indc_type = ty_query_subrange(indices->type,&low,&high);
+			align_size *= high - low + 1;
 			indices = indices->next;
 		}
 	}
 	return align_size;
 }
 
-static TYPE get_array_align_element(TYPE query_type);
+static TYPE get_array_align_element(TYPE query_type)
 {
 	TYPE new_type_query; 
+	INDEX_LIST ilist; 
 	if (ty_query(query_type) != TYARRAY)
 	{
 		return query_type; 
 	}
 
- TYPE new_type_query = ty_query_array(query_type, query_type->u.array.indices);
- get_array_align_element(new_type_query);	
+	 new_type_query = ty_query_array(query_type, &ilist);
+	 get_array_align_element(new_type_query);	
 
 } 
 
-static TYPE get_subrange_align_element(TYPE query_type);
+static TYPE get_subrange_align_element(TYPE query_type)
 {
 	TYPE new_type_query; 
-	long lower; 
-	long upper; 
 	if (ty_query(query_type) != TYSUBRANGE)
 	{
 		return query_type; 
