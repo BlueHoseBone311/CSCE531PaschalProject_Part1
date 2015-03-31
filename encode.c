@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "encode.h"
-#include "tree.h"
+
 
 static int calc_array_size(TYPE array_type, int align); 
 static TYPE get_array_align_element(TYPE array); 

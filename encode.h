@@ -4,6 +4,7 @@
 #include "symtab.h"
 #include "message.h"
 #include "backend-x86.h"
+#include "tree.h"
 
 /*Primary method to set alignment for various types*/
 
