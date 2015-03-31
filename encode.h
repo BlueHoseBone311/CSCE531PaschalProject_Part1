@@ -7,15 +7,11 @@
 
 /*Primary method to set alignment for various types*/
 
-void encode_align (TYPE type, VAR_ID_LIST varlist_id)
+void encode_align (TYPE type, VAR_ID_LIST varlist_id);
 
 
 /*Allocates space for basic types */
 void encode_basic_alloc (char *id, TYPE type);
-
-
-
-
 
 
 #endif 
