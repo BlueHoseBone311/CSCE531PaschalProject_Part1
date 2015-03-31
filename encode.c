@@ -1,22 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "encode.h"
-#include "backend-x86.h"
+#include "tree.h"
 
-static TYPE get_array_element(TYPE array); 
 static int calc_array_size(TYPE array_type, int align); 
+static TYPE get_array_align_element(TYPE array); 
 static TYPE get_subrange_align_element(TYPE query_type);
 
 
-void encode_align (TYPE type, VAR_ID_LIST varlist_id)
+void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 {
 
 	if (ty_query(type)==TYERROR) return;
 	if (ty_query(type)==TYFUNC) return;
 
-	while (list_id) 
+	while (varlist_id) 
 	{
-		ST_ID id = list_id->id;
+		ST_ID id = varlist_id->id;
 		unsigned int size;
 		char *decl_id;
 		int align;
@@ -29,9 +29,9 @@ void encode_align (TYPE type, VAR_ID_LIST varlist_id)
 		tag = ty_query(type);
 		if(tag == TYARRAY) 
 		{
-            base_type = get_array_element(type);
+            base_type = get_array_align_element(type);
 			align = encode_get_base_size(base_type);
-			size = get_array_size(type, align);
+			size = calc_array_size(type, align);
 		}
 		else if (tag == TYSUBRANGE)
 		{
@@ -117,56 +117,54 @@ void encode_align (TYPE type, VAR_ID_LIST varlist_id)
 				bug(" Typetag error - Hit Default Action in (%d) ", tag);
 		}
 
-		list_id = list_id->next;
+		varlist_id = varlist_id->next;
 	}
 }
 
 /*Allocates space for basic types */
-void encode_get_base_size (char *id, TYPE type)
+unsigned int encode_get_base_size (TYPE type)
 {
 	TYPETAG tp_tag; 
-	INDEX_LIST i; 
 	unsigned int bit_length; 
-
 	tp_tag = ty_query(type);
-	switch (ty_tag)
-	{
 
+	switch (tp_tag)
+	{
 		case TYPTR:
-			length = 4;
+			bit_length = 4;
 			break;
 		case TYFLOAT:
-			length = 4;
+			bit_length = 4;
 			break;
 		case TYDOUBLE:
-			length = 8;	
+			bit_length = 8;	
 			break;
 		case TYLONGDOUBLE:
-			length = 8;
+			bit_length = 8;
 			break;
 		case TYUNSIGNEDINT:
-			length = 4;
+			bit_length = 4;
 			break;
 		case TYUNSIGNEDCHAR:
-			length = 1;
+			bit_length = 1;
 			break;
 		case TYUNSIGNEDSHORTINT:
-			length = 2;
+			bit_length = 2;
 			break;
 		case TYUNSIGNEDLONGINT:
-			length = 4;
+			bit_length = 4;
 			break;
 		case TYSIGNEDCHAR:
-			length = 1;
+			bit_length = 1;
 			break;
 		case TYSIGNEDINT:
-			length = 4;
+			bit_length = 4;
 			break;
 		case TYSIGNEDLONGINT:
-			length = 4;
+			bit_length = 4;
 			break;
 		case TYSIGNEDSHORTINT:
-			length = 2;
+			bit_length = 2;
 			break;
 		case TYSTRUCT:
 			break;
@@ -181,9 +179,11 @@ void encode_get_base_size (char *id, TYPE type)
 		case TYERROR:
 			break;
 		default:
-			bug(" Typetag error - Hit Default Action in (%d) ", tag);
+			bug(" Typetag error - Hit Default Action in (%d) ", tp_tag);
 	}
+	return bit_length; 
 }
+
 /* STATIC SUBROUTINES */
 
 static int calc_array_size(TYPE array_type, int align) 
@@ -203,7 +203,7 @@ static int calc_array_size(TYPE array_type, int align)
 		while (indices != NULL) 
 		{ 
 			indc_type = ty_query_subrange(indices->type,&lower,&upper);
-			align_size *= high - low + 1;
+			align_size *= upper - lower + 1;
 			indices = indices->next;
 		}
 	}
@@ -233,9 +233,6 @@ static TYPE get_subrange_align_element(TYPE query_type);
 		return query_type; 
 	}
 
-	lower = query_type->u.subrange.low;
-	upper = query_type->u.subrange.high;
-	new_type_query = ty_query_array(query_type, lower, upper);
+	new_type_query = ty_strip_modifier(query_type);
 	get_array_align_element(new_type_query);	
-
 } 

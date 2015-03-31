@@ -51,7 +51,7 @@ main.o: main.c defs.h types.h symtab.h
 
 tree.o: tree.c tree.h encode.h types.h message.h symtab.h
 
-encode.o: encode.c encode.h 
+encode.o: encode.c encode.h message.h $(PPC3H)
 
 types.o: types.c types.h symtab.h message.h
 
