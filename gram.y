@@ -944,7 +944,7 @@ relational_operator:
   | LEX_GE
   | '='
   | '<'
-  | '>'check_sub
+  | '>'      {}
   ;
 
 multiplying_operator:

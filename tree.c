@@ -19,7 +19,7 @@ void create_typename(ST_ID id,TYPE new_type)
 	//Fill the fields of the new symbol table data record
 	new_rec->tag=TYPENAME;
 	new_rec->u.typename.type=new_type;
-printf("using create_typename");
+
 
 	// Install the new data record in the symbol table
 	if (!st_install(id, new_rec)) {
