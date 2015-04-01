@@ -278,34 +278,34 @@ INDEX_LIST create_list_from_type(TYPE type)
 
 void resolve_all_ptr()
 {
-/*	int holder;
+	int holder;
 	ST_ID id;
 	ST_DR data_rec;
-	TYPE unres, temp, temp2;
+	TYPE_LIST list;
+	TYPE type;
 
-	unres=ty_get_unresolved();
+	list->type;
 
-	while(unres!=NULL)
+	while(list!=NULL)
 	{
-		temp2 = ty_query_ptr(unres, &id);
+		type = ty_query_ptr(list->type, &id);
 		data_rec = st_lookup(id, &holder);
 		if (data_rec == NULL) {
 			error("Unresolved type name: \"%s\"", st_get_id_str(id));
-			unres = temp;
 			continue;
 		}
 		if (data_rec->tag == TYPENAME)
 		{
-			if(!ty_resolve_ptr(unresolved, data_rec->u.typename.type))
+			if(!ty_resolve_ptr(type, data_rec->u.typename.type))
 				error("Unresolved type name: \"%s\"", st_get_id_str(id));
 		}
 		else
 		{
 			error("Unidentified type tag\n");
 		}
-		unres=temp;
+		list = list->next;
 	}//end while
-*/
+
 }//end resolve_all_ptr
 
 
@@ -323,6 +323,6 @@ TYPE check_subrange(long low, long high)
       {
          subrange = ty_build_subrange(ty_build_basic(TYSIGNEDLONGINT), low, high);
       }
-      
+
       return subrange;
 }
