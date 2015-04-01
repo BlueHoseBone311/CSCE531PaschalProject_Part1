@@ -179,16 +179,16 @@ unsigned int encode_get_base_size (TYPE type)
 			bug("encountered array typetag in encode_get_base_size");
 			break;
 		case TYSET:
-			bug("illegal typetag (%d) in \"get_size\"", tp_tag);
+			bug("illegal typetag (%d) in \"encode_get_base_size\"", tp_tag);
 			break;
 		case TYSTRUCT:
-			bug("illegal typetag (%d) in \"get_size\"", tp_tag);
+			bug("illegal typetag (%d) in \"encode_get_base_size\"", tp_tag);
 			break;
 		case TYUNION:
-			bug("illegal typetag (%d) in \"get_size\"", tp_tag);
+			bug("illegal typetag (%d) in \"encode_get_base_size\"", tp_tag);
 			break;
 		case TYENUM:
-			bug("illegal typetag (%d) in \"get_size\"", tp_tag);
+			bug("illegal typetag (%d) in \"encode_get_base_size\"", tp_tag);
 			break;
 		case TYFUNC:
 			break;

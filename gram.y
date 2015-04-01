@@ -66,6 +66,7 @@ void yyerror(const char *);
 /* The union representing a semantic stack entry */
 %union {
     char *        y_string;
+    unsigned char y_char;
     int	          y_cint;
     long          y_int;
     double        y_real;
@@ -137,8 +138,9 @@ void yyerror(const char *);
 %token p_DATE p_TIME LEX_RENAME LEX_IMPORT LEX_USES LEX_QUALIFIED LEX_ONLY
 
 /*Explicit Typing*/
-%type <y_cint> variable_declaration simple_decl  
-%type <y_cint> constant number unsigned_number sign 
+%type <y_cint> variable_declaration simple_decl 
+%type <y_int> number constant unsigned_number LEX_INTCONST LEX_REALCONST
+%type <y_string> sign
 %type <y_type> typename type_denoter 
 %type <y_type> subrange_type new_procedural_type ordinal_index_type
 %type <y_type> array_type new_structured_type
@@ -294,11 +296,11 @@ constant:
     identifier             {}  
   | sign identifier        {} 
   | number                
-  | constant_literal	   {}
+  | constant_literal	     {}
   ;
 
 number:
-    sign unsigned_number     {$$ = $2;}    
+    sign unsigned_number     {}    
   | unsigned_number          {$$ = $1;} 
   ;
 
@@ -308,8 +310,8 @@ unsigned_number:
   ;
 
 sign:
-    '+'      {}
-  | '-'      {} 
+    '+'                    {}
+  | '-'                    {}
   ;
 
 constant_literal:

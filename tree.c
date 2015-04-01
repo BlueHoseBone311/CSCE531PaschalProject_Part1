@@ -310,12 +310,13 @@ void resolve_all_ptr()
 
 
 
-TYPE check_subrange(int low, int high)
+TYPE check_subrange(long low, long high)
 {
       TYPE subrange;
       if(low > high)
       {
-         error("Lower index is greater than Higher index.");
+         error("Empty subrange in array index");
+         error("illegal index type (ignored)");
          subrange = ty_build_basic(TYERROR);
        }
       else
