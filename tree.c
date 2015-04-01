@@ -5,7 +5,7 @@
 #include <string.h>
 #include "encode.h"
 
-static TYPELIST list = NULL; 
+static TYPE_LIST list = NULL; 
 
 //Project 1 functions
 
@@ -274,35 +274,25 @@ INDEX_LIST create_list_from_type(TYPE type)
 	return index;
 }//end create_list_from_type
 
-TYPE_LIST create_unresolved_ptr(TYPE type)
-{
-	if (ty_query(type) == TYERROR) return NULL;
-	TYPE_LIST list;
-	list = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
-	list->type = type;
-	list->next = NULL;
-	list->prev=NULL;
-	return list;
-}//end create_unresolved_ptr
-
 TYPE check_unresolved(TYPE object)
 {
 	TYPE ptr;
 	if (object == NULL)
 	{
+		
 		ptr = ty_build_unresolved_ptr(object->id);
-		ptr->u.pointer.next = list;	
-	    list = ptr; 
+
+		while (temp->next != NULL)
+		{	
+			list = list->next;
+	    }	      
 	}
-	
 	else 
 	{
 		ptr = ty_build_ptr(object);
 	}	
-
 	return ptr; 
 } 
-
 
 void resolve_all_ptr()
 {
