@@ -80,8 +80,9 @@ INDEX_LIST create_list_from_type(TYPE type);
 */
 TYPE check_unresolved(ST_ID id);
 /*
-	This function creates the unresolved list for the ptrs
-	It returns a type_list
+	This method builds an unresolved pointer and adds it to the 
+	LL of unresolved pointers
+	It returns the pointer of TYPE. 
 */
 void resolve_all_ptr();
 /*
@@ -90,6 +91,9 @@ void resolve_all_ptr();
 */
 
 TYPE check_subrange(long low, long high); 	
-
+/*
+   Method that builds a subrange of type TYSIGNEDLONGINT, making sure
+   that low and high are appropriate ranges
+*/
 #endif
 
