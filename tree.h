@@ -71,7 +71,7 @@ INDEX_LIST create_list_from_type(TYPE type);
 	This function creates the index list for the arrays.
  	It returns the index list
 */
-TYPE check_unresolved(TYPE object);
+TYPE check_unresolved(TYPE ptr_type);
 /*
 	This function creates the unresolved list for the ptrs
 	It returns a type_list

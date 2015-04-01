@@ -257,7 +257,7 @@ INDEX_LIST concat_index_list (INDEX_LIST list1,TYPE type)
 	}
 	temp->next = new_list;
 
-	return temp;
+	return list1;
 
 }//end concat_index_list
 
@@ -274,18 +274,14 @@ INDEX_LIST create_list_from_type(TYPE type)
 	return index;
 }//end create_list_from_type
 
-TYPE check_unresolved(TYPE ptr_type)
+TYPE check_unresolved(TYPE ptr_type_object)
 {
 	TYPE new_ptr; 
-	if (ptr_type == NULL)
+	if (ptr_type_object == NULL)
 	{
-		error("tried to pass NULL pointer in check_unresolved");
-	}
-
-	if (ptr_type->u.pointer.object == NULL)
-	{
+	
 		TYPE_LIST node = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
-		new_ptr = ty_build_unresolved_ptr(ptr_type->u.pointer.id);
+		new_ptr = ty_build_unresolved_ptr(ptr_type_object->u.pointer.id);
 
 		node->type = new_ptr; 
 		node->next = NULL;
@@ -306,7 +302,7 @@ TYPE check_unresolved(TYPE ptr_type)
 	}
 	else 
 	{
-		new_ptr = ty_build_ptr(ptr_type);
+		new_ptr = ty_build_ptr(ptr_type_object);
 	}	
 	return new_ptr; 
 } 
