@@ -300,7 +300,7 @@ constant:
   ;
 
 number:
-    sign unsigned_number     {}    
+    sign unsigned_number     {$$ = $2;}    
   | unsigned_number          {$$ = $1;} 
   ;
 

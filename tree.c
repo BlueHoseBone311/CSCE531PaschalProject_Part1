@@ -274,8 +274,6 @@ INDEX_LIST create_list_from_type(TYPE type)
 	return index;
 }//end create_list_from_type
 
-
-
 void resolve_all_ptr()
 {
 	int holder;
