@@ -139,9 +139,6 @@ unsigned int encode_get_base_size (TYPE type)
 
 	switch (tp_tag)
 	{
-		case TYPTR:
-			bit_length = 4;
-			break;
 		case TYFLOAT:
 			bit_length = 4;
 			break;
@@ -175,14 +172,29 @@ unsigned int encode_get_base_size (TYPE type)
 		case TYSIGNEDSHORTINT:
 			bit_length = 2;
 			break;
+		case TYPTR:
+			bit_length = 4;
+			break;	
+		case TYARRAY:
+			bug("encountered array typetag in encode_get_base_size");
+			break;
+		case TYSET:
+			bug("illegal typetag (%d) in \"get_size\"", tp_tag);
+			break;
 		case TYSTRUCT:
+			bug("illegal typetag (%d) in \"get_size\"", tp_tag);
 			break;
 		case TYUNION:
+			bug("illegal typetag (%d) in \"get_size\"", tp_tag);
 			break;
 		case TYENUM:
+			bug("illegal typetag (%d) in \"get_size\"", tp_tag);
 			break;
 		case TYFUNC:
-			break;	
+			break;
+		case TYSUBRANGE:
+			bug("encountered subrange typetag in encode_get_base_size");
+			break;		
 		case TYVOID:
 			break;
 		case TYERROR:

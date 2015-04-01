@@ -10,10 +10,8 @@
 
 void encode_declaration (TYPE type, VAR_ID_LIST varlist_id);
 
-
-/*Allocates space for basic types */
+/*Provides the size of the base element given the type*/
 unsigned int encode_get_base_size (TYPE type);
-
 
 
 #endif 

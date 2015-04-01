@@ -138,7 +138,7 @@ void yyerror(const char *);
 
 /*Explicit Typing*/
 %type <y_cint> variable_declaration simple_decl  
-%type <y_cint> constant number unsigned_number// sign 
+%type <y_cint> constant number unsigned_number sign 
 %type <y_type> typename type_denoter 
 %type <y_type> subrange_type new_procedural_type ordinal_index_type
 %type <y_type> array_type new_structured_type
@@ -298,18 +298,18 @@ constant:
   ;
 
 number:
-    sign unsigned_number      
-  | unsigned_number           
+    sign unsigned_number     {$$ = $2;}    
+  | unsigned_number          {$$ = $1;} 
   ;
 
 unsigned_number:
-    LEX_INTCONST
-  | LEX_REALCONST
+    LEX_INTCONST            
+  | LEX_REALCONST           
   ;
 
 sign:
-    '+'
-  | '-'
+    '+'      {}
+  | '-'      {} 
   ;
 
 constant_literal:
@@ -343,8 +343,8 @@ type_definition:
   ;
 
 type_denoter:
-    typename
-  | new_ordinal_type
+    typename            
+  | new_ordinal_type        {}
   | new_pointer_type
   | new_procedural_type
   | new_structured_type
@@ -427,7 +427,7 @@ array_index_list:
 
 
 ordinal_index_type:
-    new_ordinal_type         
+    new_ordinal_type     {}     
   | typename
   ;
 
