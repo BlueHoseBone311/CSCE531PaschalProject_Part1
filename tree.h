@@ -1,3 +1,10 @@
+/*@Title   tree.h - Header file for Routines used by Bison for decl creation, and type building
+ * @authors  Venugopal Boppa, Christopher A. Greer, Christian Merchant
+ * @class   CSCE531
+ * @Project Pascal Compiler Part I
+ * @date    03-31-15
+*/
+
 #ifndef TREE_C
 #define TREE_C
 #include "types.h"
@@ -71,7 +78,7 @@ INDEX_LIST create_list_from_type(TYPE type);
 	This function creates the index list for the arrays.
  	It returns the index list
 */
-TYPE check_unresolved(TYPE ptr_type);
+TYPE check_unresolved(ST_ID id);
 /*
 	This function creates the unresolved list for the ptrs
 	It returns a type_list

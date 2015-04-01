@@ -1,3 +1,11 @@
+/*@Title   tree.c - Routines used by Bison for decl creation, and type building
+ * @authors  Venugopal Boppa, Christopher A. Greer, Christian Merchant
+ * @class   CSCE531
+ * @Project Pascal Compiler Part I
+ * @date    03-31-15
+*/
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -274,36 +282,33 @@ INDEX_LIST create_list_from_type(TYPE type)
 	return index;
 }//end create_list_from_type
 
-TYPE check_unresolved(TYPE ptr_type_object)
+TYPE check_unresolved(ST_ID id)
 {
 	TYPE new_ptr; 
-	if (ptr_type_object == NULL)
+	if (id == NULL)
 	{
-	
-		TYPE_LIST node = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
-		new_ptr = ty_build_unresolved_ptr(ptr_type_object->u.pointer.id);
-
-		node->type = new_ptr; 
-		node->next = NULL;
-
-		if (unresolved_Pointers == NULL)
-		{
-			unresolved_Pointers = node; 
-		}	
-		else
- 		{
-			while (unresolved_Pointers != NULL)
-			{	
-				unresolved_Pointers = unresolved_Pointers->next;
-		    }
-		    unresolved_Pointers->next = node; 
-		    (unresolved_Pointers->next)->prev = unresolved_Pointers; 
-	    }	      
+		fatal ("tried to pass a null id in check_unresolved");
 	}
-	else 
+
+	TYPE_LIST node = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
+	new_ptr = ty_build_unresolved_ptr(id);
+	node->type = new_ptr; 
+	node->next = NULL;
+
+	if (unresolved_Pointers == NULL)
 	{
-		new_ptr = ty_build_ptr(ptr_type_object);
+		unresolved_Pointers = node; 
 	}	
+	else
+	{
+		while (unresolved_Pointers != NULL)
+		{	
+			unresolved_Pointers = unresolved_Pointers->next;
+	    }
+	    unresolved_Pointers->next = node; 
+	    (unresolved_Pointers->next)->prev = unresolved_Pointers; 
+    }	      
+
 	return new_ptr; 
 } 
 
@@ -312,10 +317,7 @@ void resolve_all_ptr()
 	int holder;
 	ST_ID id;
 	ST_DR data_rec;
-	TYPE_LIST list;
 	TYPE type;
-
-	unresolved_Pointers->type;
 
 	while(unresolved_Pointers!=NULL)
 	{
@@ -336,10 +338,8 @@ void resolve_all_ptr()
 		}
 		unresolved_Pointers = unresolved_Pointers->next;
 	}//end while
-
+	
 	unresolved_Pointers = NULL; 
-
-
 }//end resolve_all_ptr
 
 

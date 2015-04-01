@@ -1,3 +1,10 @@
+ /*@Title   gram.y - Bison file for Pascal declaration compilation
+ * @authors  Venugopal Boppa, Christopher A. Greer, Christian Merchant
+ * @class   CSCE531
+ * @Project Pascal Compiler Part I
+ * @date    03-31-15
+*/
+
 /*A Bison parser for the programming lang language Pascal.
   Copyright (C) 1989-2002 Free Software Foundation, Inc.
 
@@ -53,7 +60,7 @@
 #include "tree.h"
 
 void set_yydebug(int);
-void yyerror(const char *);
+void yyerror(char *);
 
 /* Like YYERROR but do call yyerror */
 #define YYERROR1 { yyerror ("syntax error"); YYERROR; }
@@ -139,7 +146,7 @@ void yyerror(const char *);
 
 /*Explicit Typing*/
 %type <y_cint> variable_declaration simple_decl 
-%type <y_int> number constant unsigned_number LEX_INTCONST LEX_REALCONST
+%type <y_int> number constant unsigned_number LEX_INTCONST 
 %type <y_string> sign
 %type <y_type> typename type_denoter 
 %type <y_type> subrange_type new_procedural_type ordinal_index_type
@@ -306,7 +313,7 @@ number:
 
 unsigned_number:
     LEX_INTCONST            
-  | LEX_REALCONST           
+  | LEX_REALCONST           {}
   ;
 
 sign:
@@ -972,7 +979,7 @@ optional_semicolon:
 
 %%
 
-void yyerror(const char *msg)
+void yyerror(char *msg)
 {
     error(msg);
 }
