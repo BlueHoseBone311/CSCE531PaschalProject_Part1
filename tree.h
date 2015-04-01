@@ -71,7 +71,7 @@ INDEX_LIST create_list_from_type(TYPE type);
 	This function creates the index list for the arrays.
  	It returns the index list
 */
-TYPE_LIST create_unresolved_ptr(TYPE type);
+TYPE check_unresolved(TYPE object);
 /*
 	This function creates the unresolved list for the ptrs
 	It returns a type_list
@@ -82,11 +82,7 @@ void resolve_all_ptr();
  	An error message is issued for every unresolved pointer.
 */
 
-<<<<<<< HEAD
 TYPE check_subrange(long low, long high); 	
-=======
-TYPE check_subrange(int low, int high);
->>>>>>> 8c8c57f75b93f25f75b07d28790b4d613489599b
 
 #endif
 

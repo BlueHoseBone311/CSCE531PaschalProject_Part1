@@ -384,8 +384,8 @@ pointer_char:
   ;
 
 pointer_domain_type:
-    new_identifier           {$$ = ty_build_ptr($1);}
-  | new_procedural_type      {$$ = ty_build_ptr($1);}  
+    new_identifier           {$$ = check_unresolved($1);}
+  | new_procedural_type      {$$ = check_unresolved($1);}  
   ;
 
 new_procedural_type:
