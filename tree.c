@@ -5,7 +5,7 @@
 #include <string.h>
 #include "encode.h"
 
-static TYPE_LIST list = NULL; 
+static TYPE_LIST unresolved_Pointers = NULL; 
 
 //Project 1 functions
 
@@ -276,15 +276,27 @@ INDEX_LIST create_list_from_type(TYPE type)
 
 TYPE check_unresolved(TYPE object)
 {
-	TYPE ptr;
+
 	if (object == NULL)
 	{
-		
-		ptr = ty_build_unresolved_ptr(object->id);
+		TYPE_LIST node = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
+		ptr = ty_build_unresolved_ptr(object->u.pointer.id);
 
-		while (temp->next != NULL)
-		{	
-			list = list->next;
+		node->type = ptr; 
+		node->next = NULL;
+
+		if (unresolved_Pointers == NULL)
+		{
+			unresolved_Pointers = node; 
+		}	
+		else
+ 		{
+			while (unresolved_Pointers != NULL)
+			{	
+				unresolved_Pointers = unresolved_Pointers->next;
+		    }
+		    unresolved_Pointers->next = node; 
+		    (unresolved_Pointers->next)->previous = unresolved_Pointers; 
 	    }	      
 	}
 	else 
@@ -302,11 +314,11 @@ void resolve_all_ptr()
 	TYPE_LIST list;
 	TYPE type;
 
-	list->type;
+	unresolved_Pointers->type;
 
-	while(list!=NULL)
+	while(unresolved_Pointers!=NULL)
 	{
-		type = ty_query_ptr(list->type, &id);
+		type = ty_query_ptr(unresolved_Pointers->type, &id);
 		data_rec = st_lookup(id, &holder);
 		if (data_rec == NULL) {
 			error("Unresolved type name: \"%s\"", st_get_id_str(id));
@@ -321,8 +333,10 @@ void resolve_all_ptr()
 		{
 			error("Unidentified type tag\n");
 		}
-		list = list->next;
+		unresolved_Pointers = unresolved_Pointers->next;
 	}//end while
+
+	unresolved_Pointers = NULL; 
 
 
 }//end resolve_all_ptr
