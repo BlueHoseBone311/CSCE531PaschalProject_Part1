@@ -274,6 +274,17 @@ INDEX_LIST create_list_from_type(TYPE type)
 	return index;
 }//end create_list_from_type
 
+TYPE_LIST create_unresolved_ptr(TYPE type)
+{
+	if (ty_query(type) == TYERROR) return NULL;
+	TYPE_LIST list;
+	list = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
+	list->type = type;
+	list->next = NULL;
+	list->prev=NULL;
+	return list;
+}//end create_unresolved_ptr
+
 void resolve_all_ptr()
 {
 	int holder;
