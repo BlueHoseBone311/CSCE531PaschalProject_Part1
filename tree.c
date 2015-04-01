@@ -274,15 +274,20 @@ INDEX_LIST create_list_from_type(TYPE type)
 	return index;
 }//end create_list_from_type
 
-TYPE check_unresolved(TYPE object)
+TYPE check_unresolved(TYPE ptr_type)
 {
+	TYPE new_ptr; 
+	if (ptr_type == NULL)
+	{
+		error("tried to pass NULL pointer in check_unresolved");
+	}
 
-	if (object == NULL)
+	if (ptr_type->u.pointer.object == NULL)
 	{
 		TYPE_LIST node = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
-		ptr = ty_build_unresolved_ptr(object->u.pointer.id);
+		new_ptr = ty_build_unresolved_ptr(ptr_type->u.pointer.id);
 
-		node->type = ptr; 
+		node->type = new_ptr; 
 		node->next = NULL;
 
 		if (unresolved_Pointers == NULL)
@@ -296,14 +301,14 @@ TYPE check_unresolved(TYPE object)
 				unresolved_Pointers = unresolved_Pointers->next;
 		    }
 		    unresolved_Pointers->next = node; 
-		    (unresolved_Pointers->next)->previous = unresolved_Pointers; 
+		    (unresolved_Pointers->next)->prev = unresolved_Pointers; 
 	    }	      
 	}
 	else 
 	{
-		ptr = ty_build_ptr(object);
+		new_ptr = ty_build_ptr(ptr_type);
 	}	
-	return ptr; 
+	return new_ptr; 
 } 
 
 void resolve_all_ptr()
