@@ -287,7 +287,7 @@ TYPE check_unresolved(ST_ID id)
 	TYPE new_ptr; 
 	if (id == NULL)
 	{
-		fatal ("tried to pass a null id in check_unresolved");
+		bug ("tried to pass a null id in check_unresolved");
 	}
 
 	TYPE_LIST node = (TYPE_LIST) malloc(sizeof(TLIST_NODE));
@@ -301,12 +301,12 @@ TYPE check_unresolved(ST_ID id)
 	}	
 	else
 	{
-		while (unresolved_Pointers != NULL)
+		while (unresolved_Pointers->next != NULL)
 		{	
 			unresolved_Pointers = unresolved_Pointers->next;
 	    }
 	    unresolved_Pointers->next = node; 
-	    (unresolved_Pointers->next)->prev = unresolved_Pointers; 
+	    unresolved_Pointers->next->prev = unresolved_Pointers; 
     }	      
 
 	return new_ptr; 
