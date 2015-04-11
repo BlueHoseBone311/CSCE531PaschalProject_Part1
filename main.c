@@ -1,8 +1,8 @@
 /*@Title   main.c - Main method for a Pascal language declaration compiler
  * @authors  Venugopal Boppa, Christopher A. Greer, Christian Merchant
  * @class   CSCE531
- * @Project Pascal Compiler Part I
- * @date    03-31-15
+ * @Project Pascal Compiler Part II
+ * @date    04-17-15
 */
 
 
