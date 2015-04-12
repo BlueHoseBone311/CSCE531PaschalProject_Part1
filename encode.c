@@ -10,24 +10,25 @@
 #include "encode.h"
 
 
-static int calc_array_size(TYPE array_type, int align); 
-static TYPE get_array_align_element(TYPE array); 
+static int calc_array_size(TYPE array_type, int align);
+static TYPE get_array_align_element(TYPE array);
 static TYPE get_subrange_align_element(TYPE query_type);
+
 
 
 void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 {
 
-	if (ty_query(type)==TYERROR) 
-	{	
+	if (ty_query(type)==TYERROR)
+	{
 		return;
-	}	
-	if (ty_query(type)==TYFUNC) 
-	{	
+	}
+	if (ty_query(type)==TYFUNC)
+	{
 		return;
-	}	
+	}
 
-	while (varlist_id) 
+	while (varlist_id)
 	{
 		ST_ID id = varlist_id->id;
 		unsigned int size;
@@ -35,15 +36,15 @@ void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 		int align;
 
 		TYPETAG tag;
-		TYPE base_type; 
+		TYPE base_type;
 
 		if (!id)
-		{	
+		{
 			bug("Oops! ST_ID Received is Null\n");
-		}	
+		}
 
 		tag = ty_query(type);
-		if(tag == TYARRAY) 
+		if(tag == TYARRAY)
 		{
             base_type = get_array_align_element(type);
 			align = encode_get_base_size(base_type);
@@ -53,12 +54,12 @@ void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 		{
 			base_type = get_subrange_align_element(type);
 			align = encode_get_base_size(base_type);
-			size = align; 
-		}	
-		else 
+			size = align;
+		}
+		else
 		{
 			align = encode_get_base_size(type);
-			size = align; 
+			size = align;
 		}
 
 		decl_id=st_get_id_str(id);
@@ -111,7 +112,7 @@ void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 				break;
 			case TYSET:
 				bug("Typetag ERROR  (%d)", tag);
-				break;	
+				break;
 			case TYSTRUCT:
 				bug("Typetag ERROR (%d)", tag);
 				break;
@@ -121,8 +122,8 @@ void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 			case TYENUM:
 				bug("Typetag ERROR (%d)", tag);
 				break;
-			case TYFUNC:	
-				break;	
+			case TYFUNC:
+				break;
 			case TYVOID:
 				msgn("Type: Void");
 				break;
@@ -140,8 +141,8 @@ void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 /*Allocates space for basic types */
 unsigned int encode_get_base_size (TYPE type)
 {
-	TYPETAG tp_tag; 
-	unsigned int bit_length; 
+	TYPETAG tp_tag;
+	unsigned int bit_length;
 	tp_tag = ty_query(type);
 
 	switch (tp_tag)
@@ -150,7 +151,7 @@ unsigned int encode_get_base_size (TYPE type)
 			bit_length = 4;
 			break;
 		case TYDOUBLE:
-			bit_length = 8;	
+			bit_length = 8;
 			break;
 		case TYLONGDOUBLE:
 			bit_length = 8;
@@ -181,7 +182,7 @@ unsigned int encode_get_base_size (TYPE type)
 			break;
 		case TYPTR:
 			bit_length = 4;
-			break;	
+			break;
 		case TYARRAY:
 			bug("encountered array typetag in encode_get_base_size");
 			break;
@@ -201,7 +202,7 @@ unsigned int encode_get_base_size (TYPE type)
 			break;
 		case TYSUBRANGE:
 			bug("encountered subrange typetag in encode_get_base_size");
-			break;		
+			break;
 		case TYVOID:
 			break;
 		case TYERROR:
@@ -209,27 +210,27 @@ unsigned int encode_get_base_size (TYPE type)
 		default:
 			bug(" Typetag error - Hit Default Action in (%d) ", tp_tag);
 	}
-	return bit_length; 
+	return bit_length;
 }
 
 /* STATIC SUBROUTINES */
 
-static int calc_array_size(TYPE array_type, int align) 
+static int calc_array_size(TYPE array_type, int align)
 {
-	long low; 
+	long low;
 	long high;
-	TYPE indc_type; 
+	TYPE indc_type;
 	TYPE type;
 	unsigned int align_size = align;
 	INDEX_LIST indices;
-	
+
 	type = array_type;
 
-	while (ty_query(type) == TYARRAY) 
+	while (ty_query(type) == TYARRAY)
 	{
 		type = ty_query_array(type, &indices);
-		while (indices != NULL) 
-		{ 
+		while (indices != NULL)
+		{
 			indc_type = ty_query_subrange(indices->type,&low,&high);
 			align_size *= high - low + 1;
 			indices = indices->next;
@@ -240,26 +241,40 @@ static int calc_array_size(TYPE array_type, int align)
 
 static TYPE get_array_align_element(TYPE query_type)
 {
-	TYPE new_type_query; 
-	INDEX_LIST ilist; 
+	TYPE new_type_query;
+	INDEX_LIST ilist;
 	if (ty_query(query_type) != TYARRAY)
 	{
-		return query_type; 
+		return query_type;
 	}
 
 	 new_type_query = ty_query_array(query_type, &ilist);
-	 get_array_align_element(new_type_query);	
+	 get_array_align_element(new_type_query);
 
-} 
+}
 
 static TYPE get_subrange_align_element(TYPE query_type)
 {
-	TYPE new_type_query; 
+	TYPE new_type_query;
 	if (ty_query(query_type) != TYSUBRANGE)
 	{
-		return query_type; 
+		return query_type;
 	}
 
 	new_type_query = ty_strip_modifier(query_type);
-	get_array_align_element(new_type_query);	
-} 
+	get_array_align_element(new_type_query);
+}
+
+
+//Project II
+
+int get_formal_param_offset(TYPETAG tag)
+{
+  return b_get_formal_param_offset(tag);
+}
+
+int getSize(TYPE type) {
+   int size = encode_get_base_size(type);
+   return size;
+}
+

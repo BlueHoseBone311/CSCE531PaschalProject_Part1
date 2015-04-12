@@ -62,6 +62,14 @@
 void set_yydebug(int);
 void yyerror(char *);
 
+/* Function stack variables */
+ST_ID func_stack_id[BS_DEPTH];
+int func_top = -1;
+
+/* Base offset stack */
+int base_stack_offset[BS_DEPTH];
+int base_top = -1;
+
 /* Like YYERROR but do call yyerror */
 #define YYERROR1 { yyerror ("syntax error"); YYERROR; }
 %}

@@ -20,5 +20,10 @@ void encode_declaration (TYPE type, VAR_ID_LIST varlist_id);
 /*Provides the size of the base element given the type*/
 unsigned int encode_get_base_size (TYPE type);
 
+int getSize(TYPE type);
+int get_local_var_offset();
+void decl_encode(TYPE type, VAR_ID_LIST list_id);
+int get_formal_param_offset(TYPETAG tag);
 
-#endif 
+
+#endif

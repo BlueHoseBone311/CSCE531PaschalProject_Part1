@@ -23,17 +23,18 @@ typedef struct var_id {
 
 typedef enum {
     INTCONST, REALCONST, STRCONST, GID, LVAR, LFUN, UNOP, BINOP,
-    FCALL, ERROR, ARRAY_ACCESS
+    FCALL, ERROR, ARRAY_ACCESS, NULLOP
 } EXPR_TAG;
 
 typedef enum {
-    CONVERT_OP, DEREF_OP, ORD_OP, CHR_OP, SUCC_OP, PRED_OP,
-    NOT_OP, UPLUS_OP, UMINUS_OP;
+    CONVERT_OP, DEREF_OP, ORD_OP, CHR_OP, SUCC_OP, PRED_OP, NEG_OP,
+    NOT_OP, UPLUS_OP, UMINUS_OP, UN_SUCC_OP, UN_PRED_OP, INDIR_OP, NEW_OP,
+    DISPOSE_OP, ADDRESS_OP, SET_RETURN_OP,
 } EXPR_UNOP;
 
 typedef enum {
     ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, REALDIV_OP, EQ_OP, LESS_OP, LE_OP,
-    GE_OP, GREATER_OP
+    GE_OP, GREATER_OP, ASSIGN_OP, NE_OP, BIN_SUCC_OP, BIN_PRED_OP
 } EXPR_BINOP;
 
 typedef enum {
@@ -86,6 +87,13 @@ typedef struct exprnode {
 	} fcall_or_array_access;
     } u;
 } EXPR_NODE, *EXPR;
+
+//records the current func id to detect return values.
+extern ST_ID func_stack_id[BS_DEPTH];
+extern int func_top;
+
+extern int base_stack_offset[BS_DEPTH];
+extern int base_top;
 
 //PROJECT I FUNCTIONS
 void create_typename(ST_ID id,TYPE new_type);
@@ -171,12 +179,13 @@ TYPE check_subrange(long low, long high);
 EXPR make_intconst_expr(long val, TYPE type);
 EXPR make_realconst_expr(double val);
 EXPR make_strconst_expr(char * str);
-EXPR make_id_expr(ST_ID id);
 EXPR make_null_expr(EXPR_NULLOP op);
+EXPR make_error_expr();
+EXPR make_id_expr(ST_ID id);
 EXPR make_un_expr(EXPR_UNOP op, EXPR sub);
 EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right);
 EXPR make_fcall_expr(EXPR func, EXPR_LIST args);
-EXPR make_error_expr();
+
 
 //Reverses a list of Expr
 EXPR_LIST expr_list_reverse(EXPR_LIST list);
@@ -184,11 +193,11 @@ EXPR_LIST expr_list_reverse(EXPR_LIST list);
 /*Prepend and EXPR onto the front of an Expr list*/
 EXPR_LIST expr_prepend(EXPR expr, EXPR_LIST list);
 
-/*	Checks taht both the lo and hi values are INTCONSTS.
+/*	Checks that both the lo and hi values are INTCONSTS.
 	Checks to see if the second subrange is higher than the first.
 	IF not returns error.
 */
-TYPE check_subrange(EXPR lo, EXPR hi);
+TYPE check_subrange_expr(EXPR lo, EXPR hi);
 
 //Process variable declarations and install ids into symbol table as either GDECL or LDECL
 int process_var_decl(VAR_ID_LIST ids, TYPE type, int cur_offset);
@@ -201,12 +210,18 @@ int enter_function(ST_ID id, TYPE type, char *global_func_name);
 //Installs parameters that are used in the enter_function
 void install_params(PARAM_LIST list);
 
-
+//checks to see if this is an assignment or procedure
 EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs);
+
+//checks to see if expr is a lval
 BOOLEAN is_lval(EXPR expr);
+
+//free expression
 void expr_free(EXPR expr);
+
+//free expression list
 void expr_list_free(EXPR_LIST list);
-char * get_global_func_name(ST_ID id);
+
 
 #endif
 
