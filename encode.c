@@ -284,7 +284,7 @@ void begin_funct_body(char *global_funct_name, TYPE type, int local_var_offset)
    TYPE funct_type;
    TYPE param_type;
    PARAM_LIST param_list;
-   BOOLEAN check;
+   BOOLEAN funct_args_flag;
    TYPETAG funct_tag;
    TYPETAG param_tag;
 
@@ -293,7 +293,7 @@ void begin_funct_body(char *global_funct_name, TYPE type, int local_var_offset)
    long low,high;
 
    //query the function to get variables
-   funct_type = ty_query_funct(type, &param_list, &check);
+   funct_type = ty_query_funct(type, &param_list, &funct_args_flag);
    funct_tag = ty_query(funct_type);
 
    
