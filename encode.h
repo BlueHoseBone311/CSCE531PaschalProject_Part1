@@ -24,6 +24,6 @@ int getSize(TYPE type);
 int get_local_var_offset();
 void decl_encode(TYPE type, VAR_ID_LIST list_id);
 int get_formal_param_offset(TYPETAG tag);
-
-
+void begin_funct_body(char *global_funct_name, TYPE type, int local_var_offset);
+void exit_func_body(char *global_funct_name, TYPE type); 
 #endif

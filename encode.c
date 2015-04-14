@@ -1,4 +1,4 @@
- /*@Title   encode.c - size calculations and code generating functions
+ /*@Title   encode.c - size calculations and code generating functtions
  * @authors  Venugopal Boppa, Christopher A. Greer, Christian Merchant
  * @class   CSCE531
  * @Project Pascal Compiler Part II
@@ -273,8 +273,93 @@ int get_formal_param_offset(TYPETAG tag)
   return b_get_formal_param_offset(tag);
 }
 
-int getSize(TYPE type) {
+int getSize(TYPE type) 
+{
    int size = encode_get_base_size(type);
    return size;
 }
+
+void begin_funct_body(char *global_funct_name, TYPE type, int local_var_offset) 
+{
+   TYPE funct_type;
+   TYPE param_type;
+   PARAM_LIST param_list;
+   BOOLEAN check;
+   TYPETAG funct_tag;
+   TYPETAG param_tag;
+
+   int block;
+   ST_DR data_record;
+   long low,high;
+
+   //query the function to get variables
+   funct_type = ty_query_funct(type, &param_list, &check);
+   funct_tag = ty_query(funct_type);
+
+   
+
+   while (param_list != NULL) 
+   {
+      param_tag = ty_query(param_list->type);
+      data_record = st_lookup(param_list->id, &block);
+
+      /*Subrange? Use Base Type*/
+      if (param_tag == TYSUBRANGE) 
+      { 
+         param_type = ty_query_subrange(type, &low, &high);
+         b_store_formal_param(ty_query(param_type));
+      }
+      else if (data_record->u.decl.is_ref == TRUE) { //VAR param_list
+         b_store_formal_param(TYPTR);
+      } 
+      else 
+      {
+         b_store_formal_param(param_tag);
+      }
+
+      param_list = param_list->next;
+   }
+
+   //nonvoid pascal function types
+   if (func_tag != TYVOID) 
+   {
+      b_alloc_return_value();
+   }
+
+   //local variables
+   b_alloc_local_vars(local_var_offset - b_get_local_var_offset());
+}
+
+void exit_func_body(char *global_funct_name, TYPE type) 
+{
+   TYPE funct_type;
+   PARAM_LIST params;
+   BOOLEAN funct_arg_flag;
+   TYPETAG funct_tag;
+   long low,high;
+
+   //query function
+   funct_type = ty_query_func(type, &params, &funct_arg_flag);
+   funct_tag = ty_query(funct_type);
+   
+   //pops the function id from the global stack;
+   fi_top--;
+
+   //pascal function (nonvoid types)
+   if (funct_tag != TYVOID) 
+   {
+      if (funct_tag == TYSUBRANGE) 
+      {
+         b_prepare_return(ty_query(ty_query_subrange(funct_type, &low, &high)));
+      }
+      else 
+      {
+         b_prepare_return(funct_tag);
+      }
+   }
+
+   b_func_epilogue(global_funct_name);
+   st_exit_block();
+}
+
 
