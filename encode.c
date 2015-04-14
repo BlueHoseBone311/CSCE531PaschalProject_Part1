@@ -293,7 +293,7 @@ void begin_funct_body(char *global_funct_name, TYPE type, int local_var_offset)
    long low,high;
 
    //query the function to get variables
-   funct_type = ty_query_funct(type, &param_list, &funct_args_flag);
+   funct_type = ty_query_func(type, &param_list, &funct_args_flag);
    funct_tag = ty_query(funct_type);
 
    
@@ -321,7 +321,7 @@ void begin_funct_body(char *global_funct_name, TYPE type, int local_var_offset)
    }
 
    //nonvoid pascal function types
-   if (func_tag != TYVOID) 
+   if (funct_tag != TYVOID) 
    {
       b_alloc_return_value();
    }
