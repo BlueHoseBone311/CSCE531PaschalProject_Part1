@@ -330,7 +330,7 @@ void begin_funct_body(char *global_funct_name, TYPE type, int local_var_offset)
    b_alloc_local_vars(local_var_offset - b_get_local_var_offset());
 }
 
-void exit_func_body(char *global_funct_name, TYPE type) 
+void end_funct_body(char *global_funct_name, TYPE type) 
 {
    TYPE funct_type;
    PARAM_LIST params;
@@ -343,7 +343,7 @@ void exit_func_body(char *global_funct_name, TYPE type)
    funct_tag = ty_query(funct_type);
    
    //pops the function id from the global stack;
-   fi_top--;
+   func_top--;
 
    //pascal function (nonvoid types)
    if (funct_tag != TYVOID) 
