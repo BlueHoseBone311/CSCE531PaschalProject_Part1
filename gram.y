@@ -90,6 +90,12 @@ int base_top = -1;
     INDEX_LIST	  y_indexlist;
     PARAM_LIST    y_paramlist;  
     TYPE          y_type; 
+    EXPR	  y_expr;
+    EXPR_LIST	  y_exprlist;
+    EXPR_NULLOP   y_nullop;
+    EXPR_UNOP     y_unop;
+    EXPR_BINOP    y_binop;
+    EXPR_ID       y_exprid;
 }
 
 %token <y_string> LEX_ID
@@ -154,8 +160,8 @@ int base_top = -1;
 
 /*Explicit Typing*/
 %type <y_cint> variable_declaration simple_decl 
-%type <y_int> number constant unsigned_number LEX_INTCONST 
-%type <y_string> sign
+%type <y_int> LEX_INTCONST 
+%type <y_string> LEX_STRCONST
 %type <y_type> typename type_denoter 
 %type <y_type> subrange_type new_procedural_type ordinal_index_type
 %type <y_type> array_type new_structured_type
@@ -165,7 +171,26 @@ int base_top = -1;
 %type <y_paramlist> procedural_type_formal_parameter
 %type <y_indexlist> array_index_list
 %type <y_stid> identifier new_identifier new_identifier_1
-%type <y_varidlist> id_list 
+%type <y_varidlist> id_list
+
+/*Project II*/
+%type <y_expr> unsigned_number number constant constant_literal
+%type <y_expr> expression actual_parameter static_expression
+%type <y_expr> boolean_expression index_expression_item
+%type <y_expr> simple_expression term signed_primary primary factor
+%type <y_expr> signed_factor variable_or_function_access predefined_literal
+%type <y_expr> variable_or_function_access_no_as standard_functions
+%type <y_expr> variable_or_function_access_no_standard_function
+%type <y_expr> variable_or_function_access_no_id rest_of_statement
+%type <y_expr> assignment_or_call_statement standard_procedure_statement
+%type <y_expr> variable_access_or_typename optional_par_actual_parameter
+
+%type <y_exprlist> actual_parameter_list optional_par_actual_parameter_list
+%type <y_exprlist> index_expression_list
+
+%type <y_nullop> rts_fun_optpar
+%type <y_unop> sign rts_fun_onepar rts_fun_parlist
+%type <y_binop> relational_operator multiplying_operator adding_operator
 
 /* Precedence rules */
 
@@ -310,39 +335,39 @@ constant_definition:
 constant:
     identifier             {}  
   | sign identifier        {} 
-  | number                
-  | constant_literal	     {}
+  | number                {$$ = $1;}
+  | constant_literal	  { $$ = $1; }
   ;
 
 number:
-    sign unsigned_number     {$$ = $2;}    
+    sign unsigned_number     {$$ = make_un_expr($1, $2);}    
   | unsigned_number          {$$ = $1;} 
   ;
 
 unsigned_number:
-    LEX_INTCONST            
-  | LEX_REALCONST           {}
+    LEX_INTCONST      {$$ = make_intconst_expr($1, ty_build_basic(TYSIGNEDLONGINT));}
+  | LEX_REALCONST      {$$ = make_realconst_expr( (double)$1);}
   ;
 
 sign:
-    '+'                    {}
-  | '-'                    {}
+    '+'      {$$ = UPLUS_OP;}
+  | '-'      {$$ = NEG_OP;}
   ;
 
 constant_literal:
-    string
-  | predefined_literal
+    string		{$$ = make_strconst_expr($1);}	
+  | predefined_literal	{$$ = $1};		
   ;
 
 predefined_literal:
-    LEX_NIL
-  | p_FALSE
-  | p_TRUE
+    LEX_NIL	{$$ = make_strconst_expr($1);}
+  | p_FALSE	{$$ = make_intconst_expr(0, ty_build_basic(TYSIGNEDCHAR));}
+  | p_TRUE	{$$ = make_intconst_expr(1, ty_build_basic(TYSIGNEDCHAR));}
   ;
 
 string:
-    LEX_STRCONST
-  | string LEX_STRCONST
+    LEX_STRCONST	{$$ = $1};
+  | string LEX_STRCONST	{$$ = $2};
   ;
 
 type_definition_part:
@@ -360,16 +385,16 @@ type_definition:
   ;
 
 type_denoter:
-    typename            
-  | new_ordinal_type        {}
-  | new_pointer_type
-  | new_procedural_type
-  | new_structured_type
+    typename            {}
+  | new_ordinal_type	{}
+  | new_pointer_type	{}
+  | new_procedural_type	{}
+  | new_structured_type	{}
   ;
 
 new_ordinal_type:
-    enumerated_type      {}
-  | subrange_type  
+    enumerated_type     {}
+  | subrange_type  	{}
   ;
 
 enumerated_type:
@@ -674,8 +699,8 @@ for_direction:
 
 simple_statement:
     empty_statement
-  | assignment_or_call_statement
-  | standard_procedure_statement
+  | assignment_or_call_statement 	{encode_expr($1);}
+  | standard_procedure_statement	{encode_expr($1);}
   | statement_extensions
   ;
 
@@ -686,17 +711,17 @@ empty_statement:
 /* function calls */
 
 optional_par_actual_parameter_list:
-    /* empty */
-  | '(' actual_parameter_list ')'
+    /* empty */		{$$ = NULL;}
+  | '(' actual_parameter_list ')'	{$$ = expr_list_reverse($2);}
   ;
 
 actual_parameter_list:
-    actual_parameter
-  | actual_parameter_list ',' actual_parameter
+    actual_parameter	{$$ = expr_prepend($1, NULL);}
+  | actual_parameter_list ',' actual_parameter	{$$ = expr_prepend($3, $1);}
   ;
 
 actual_parameter:
-    expression
+    expression {$$ =$1;}
   ;
 
 /* ASSIGNMENT and procedure calls */
@@ -712,8 +737,8 @@ variable_or_function_access_maybe_assignment:
   ;
 
 rest_of_statement:
-    /* Empty */
-  | LEX_ASSIGN expression
+    /* Empty */	{$$ = NULL;}
+  | LEX_ASSIGN expression  {$$ = $2;}	
   ;
 
 standard_procedure_statement:
@@ -724,7 +749,7 @@ standard_procedure_statement:
   | p_READ optional_par_actual_parameter_list
   | p_READLN optional_par_actual_parameter_list
   | p_PAGE optional_par_actual_parameter_list
-  | p_DISPOSE '(' actual_parameter ')'
+  | p_DISPOSE '(' actual_parameter ')'	{$$ = make_un_expr(DISPOSE_OP, $3);}
   | p_DISPOSE '(' actual_parameter ',' actual_parameter_list ')'
   ;
 
@@ -799,12 +824,12 @@ continue_statement:
 
 variable_access_or_typename:
     variable_or_function_access_no_id
-  | LEX_ID
+  | LEX_ID	{$$ = make_id_expr(st_enter_id($1));}
   ;
 
 index_expression_list:
-      index_expression_item
-    | index_expression_list ',' index_expression_item
+      index_expression_item	{$$ = expr_prepend($1, NULL);}
+    | index_expression_list ',' index_expression_item	{$$ = expr_prepend($1, $3);}
     ;
 
 index_expression_item:
@@ -823,28 +848,28 @@ boolean_expression:
   ;
 
 expression:
-    expression relational_operator simple_expression
-  | expression LEX_IN simple_expression
-  | simple_expression
+    expression relational_operator simple_expression {$$ = make_bin_expr($2, $1, $3);}
+  | expression LEX_IN simple_expression	{}
+  | simple_expression	{}
   ;
 
 simple_expression:
     term
-  | simple_expression adding_operator term
-  | simple_expression LEX_SYMDIFF term
-  | simple_expression LEX_OR term
-  | simple_expression LEX_XOR term
+  | simple_expression adding_operator term {$$ = make_bin_expr($2, $1, $3);}	
+  | simple_expression LEX_SYMDIFF term	{$$ = make_bin_expr(SYMDIFF_OP, $1, $3);}
+  | simple_expression LEX_OR term	{$$ = make_bin_expr(OR_OP, $1, $3);}
+  | simple_expression LEX_XOR term	{$$ = make_bin_expr(XOR_OP, $1, $3);}
   ;
 
 term:
     signed_primary
-  | term multiplying_operator signed_primary
-  | term LEX_AND signed_primary
+  | term multiplying_operator signed_primary	{$$ = make_bin_expr($2, $1, $3);}
+  | term LEX_AND signed_primary		{$$ = make_bin_expr(AND_OP, $1, $3);}
   ;
 
 signed_primary:
     primary
-  | sign signed_primary
+  | sign signed_primary	{$$ = make_UN_EXPR($1, $2);}
   ;
 
 primary:
@@ -856,7 +881,7 @@ primary:
 
 signed_factor:
     factor
-  | sign signed_factor
+  | sign signed_factor {$$ = make_un_expr($1, $2);}
   ;
 
 factor:
@@ -864,8 +889,8 @@ factor:
   | constant_literal
   | unsigned_number
   | set_constructor
-  | LEX_NOT signed_factor
-  | address_operator factor
+  | LEX_NOT signed_factor	{$$ = make_un_expr(NOT_OP, $2);}
+  | address_operator factor	{$$ = make_un_expr(ADDRESS_OP, $2);}
   ;
 
 address_operator:
@@ -878,7 +903,7 @@ variable_or_function_access:
   ;
 
 variable_or_function_access_no_standard_function:
-    identifier
+    identifier	{$$ = make_id_expr($1);}
   | variable_or_function_access_no_id
   ;
 
@@ -890,7 +915,7 @@ variable_or_function_access_no_id:
   | variable_or_function_access pointer_char
   | variable_or_function_access '[' index_expression_list ']'
   | variable_or_function_access_no_standard_function '(' actual_parameter_list ')'
-  | p_NEW '(' variable_access_or_typename ')'
+  | p_NEW '(' variable_access_or_typename ')'	{$$ = make_un_expr(NEW_OP, $3);}
   ;
 
 set_constructor:
@@ -909,9 +934,9 @@ member_designator:
   ;
 
 standard_functions:
-    rts_fun_onepar '(' actual_parameter ')'
-  | rts_fun_optpar optional_par_actual_parameter
-  | rts_fun_parlist '(' actual_parameter_list ')'
+    rts_fun_onepar '(' actual_parameter ')'	{$$ = make_un_expr($1, $3);}
+  | rts_fun_optpar optional_par_actual_parameter	{$$ = make_null_expr($1);}
+  | rts_fun_parlist '(' actual_parameter_list ')'	{$$ = make_un_expr($1, $3->expr);}
   ;
 
 optional_par_actual_parameter:
@@ -920,10 +945,10 @@ optional_par_actual_parameter:
   ;
 
 rts_fun_optpar:
-    p_EOF
-  | p_EOLN
+    p_EOF	{$$ = NULL_EOF_OP;}
+  | p_EOLN  	{$$ = NULL_EOLN_OP;}
   ;
-
+//left off here
 rts_fun_onepar:
     p_ABS
   | p_SQR
