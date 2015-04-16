@@ -29,7 +29,7 @@ typedef enum {
 typedef enum {
     CONVERT_OP, DEREF_OP, ORD_OP, CHR_OP, SUCC_OP, PRED_OP, NEG_OP,
     NOT_OP, UPLUS_OP, UMINUS_OP, UN_SUCC_OP, UN_PRED_OP, INDIR_OP, NEW_OP,
-    DISPOSE_OP, ADDRESS_OP, SET_RETURN_OP,
+    DISPOSE_OP, ADDRESS_OP, SET_RETURN_OP
 } EXPR_UNOP;
 
 typedef enum {
@@ -57,34 +57,34 @@ typedef struct exprnode {
     EXPR_TAG tag;
     TYPE type;
     union {
-	long intval;
-	double realval;
-	char * strval;
-	ST_ID gid;	    /* For global variables and global functions */
-	struct {            /* For local variables and formal parameters */
-	    BOOLEAN is_ref; /* TRUE if expr is a VAR (reference) parameter */
-	    int offset;     /* storage location relative to frame pointer */
-	    int link_count; /* Number of ref links to follow to find the var */
-	} lvar;
-	struct {            /* For local functions */
-	    char * global_name; /* The assembler entry point label */
-	    int link_count; /* Number of ref links to follow to find the fcn */
-	} lfun;
-	struct {            /* For nullary operators */
-	    EXPR_NULLOP op;
-	} nullop;
-	struct {            /* For unary operators */
-	    EXPR_UNOP op;
-	    struct exprnode * operand;
-	} unop;
-	struct {            /* For binary operators */
-	    EXPR_BINOP op;
-	    struct exprnode * left, * right;
-	} binop;
-	struct {     /* For procedure/function calls, array accesses  */
-	    struct exprnode * function_or_array;
-	    EXPR_LIST args_or_indices;
-	} fcall_or_array_access;
+		long intval;
+		double realval;
+		char * strval;
+		ST_ID gid;	    /* For global variables and global functions */
+		struct {            /* For local variables and formal parameters */
+		    BOOLEAN is_ref; /* TRUE if expr is a VAR (reference) parameter */
+		    int offset;     /* storage location relative to frame pointer */
+		    int link_count; /* Number of ref links to follow to find the var */
+		} lvar;
+		struct {            /* For local functions */
+		    char * global_name; /* The assembler entry point label */
+		    int link_count; /* Number of ref links to follow to find the fcn */
+		} lfun;
+		struct {            /* For nullary operators */
+		    EXPR_NULLOP op;
+		} nullop;
+		struct {            /* For unary operators */
+		    EXPR_UNOP op;
+		    struct exprnode * operand;
+		} unop;
+		struct {            /* For binary operators */
+		    EXPR_BINOP op;
+		    struct exprnode * left, * right;
+		} binop;
+		struct {     /* For procedure/function calls, array accesses  */
+		    struct exprnode * function_or_array;
+		    EXPR_LIST args_or_indices;
+		} fcall_or_array_access;
     } u;
 } EXPR_NODE, *EXPR;
 

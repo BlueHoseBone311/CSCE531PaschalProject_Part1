@@ -131,7 +131,7 @@ void encode_declaration (TYPE type, VAR_ID_LIST varlist_id)
 				msgn("Type: Error");
 				break;
 			default:
-				bug(" Typetag error - Hit Default Action in (%d) ", tag);
+				bug(" Typetag error - Hit Default Action in (%d) ", tag); break;
 		}
 
 		varlist_id = varlist_id->next;
@@ -208,7 +208,7 @@ unsigned int encode_get_base_size (TYPE type)
 		case TYERROR:
 			break;
 		default:
-			bug(" Typetag error - Hit Default Action in (%d) ", tp_tag);
+			bug(" Typetag error - Hit Default Action in (%d) ", tp_tag); break;
 	}
 	return bit_length;
 }
@@ -362,4 +362,332 @@ void end_funct_body(char *global_funct_name, TYPE type)
    st_exit_block();
 }
 
+void encode_expr(EXPR expr)
+{
+    
+  if (expr == NULL) 
+  {
+    bug("Attempt to encode null expression in 'encode_expr'");
+  }
+  
+  switch (expr->tag) 
+  {
+    
+
+    case NULLOP:   b_push_const_int(0);
+	  		       break;
+
+	case UNOP:     encode_unop(expr->u.unop.op, expr);
+	  		       break;
+
+	case BINOP:	   encode_binop(expr->u.binop.op, expr);
+			       break;
+
+	case FCALL:	   encode_funct_call(expr->u.fcall_or_array_access.function_or_array, expr->u.fcall_or_array_access.args_or_indices);
+	  		       break;
+
+	case INTCONST: 	b_push_const_int(expr->u.intval);
+	  		        if(ty_query(expr->type) == TYUNSIGNEDCHAR)
+			        {
+						b_convert(TYSIGNEDLONGINT, TYUNSIGNEDCHAR);
+	  			    }
+	 		        break;
+
+	case REALCONST: b_push_const_double(expr->u.realval);
+					break;
+
+	case STRCONST:  b_push_const_string(expr->u.strval);
+			        break;
+	case GID:		b_push_ext_addr(st_get_id_str(expr->u.gid));
+			        break;
+	
+	case LVAR:		b_push_loc_addr(0);
+					int i = 0;
+	  				for (i = 0; i < expr->u.lvar.link_count; i++) 
+					{
+						b_offset(FUNC_LINK_OFFSET);
+						b_deref(TYPTR);
+	 			 	}
+					b_offset(expr->u.lvar.offset);
+	 		        if (expr->u.lvar.is_ref == TRUE)
+	                {
+						b_deref(TYPTR);
+	  			    }
+	  			    break;
+
+	
+	case ARRAY_ACCESS: break;
+	case LFUN: break; 
+    case ERROR: break;
+    default: bug("Error: Hit default in encode_expr");               
+ 
+  }//End Switch 
+}//End encode_expr
+
+void encode_unop(EXPR_UNOP op, EXPR expr)
+{
+  long low, high;
+  TYPETAG tag, rval_tag;
+  ST_ID id;
+  TYPE type, base_type;
+  BOOLEAN converted_to_int;
+  
+  encode_expr(expr->u.unop.operand);
+
+  converted_to_int = FALSE;
+  tag = ty_query(expr->u.unop.operand->type);
+  rval_tag = ty_query(expr->type);
+
+  switch(op)
+   {
+
+    case INDIR_OP:   break; 
+    case UPLUS_OP:   break;
+    case CONVERT_OP: if(tag==TYSUBRANGE) 
+					{ 
+						base_type = ty_query_subrange(expr->u.unop.operand->type, &low, &high);
+						b_convert(TYSUBRANGE, ty_query(base_type));
+					} 
+					else if(tag==TYPTR)
+					{ 
+
+					} 
+					else
+					{ 
+						b_convert(tag, rval_tag);
+					}
+					break;
+     case NEG_OP:   b_negate(tag); break;
+   
+     case ORD_OP: 	if(tag==TYUNSIGNEDCHAR)
+					{
+					b_convert(tag, TYSIGNEDLONGINT);
+					}
+					break;
+     case CHR_OP:   if(tag==TYSIGNEDLONGINT) 
+					{
+						b_convert(tag, TYUNSIGNEDCHAR);
+					}
+					break;
+  
+     case UN_SUCC_OP:   if(tag!=TYSIGNEDLONGINT)
+						{
+							b_convert(tag,TYSIGNEDLONGINT);
+							converted_to_int=TRUE;
+						}
+						b_push_const_int(1);
+						b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+						if(converted_to_int==TRUE) 
+						{
+							b_convert(TYSIGNEDLONGINT,tag);
+						}
+						break;
+
+    case UN_PRED_OP: if(tag!=TYSIGNEDLONGINT)
+					{
+						b_convert(tag,TYSIGNEDLONGINT);
+						converted_to_int=TRUE;
+					}
+					b_push_const_int(-1);
+					b_arith_rel_op(B_ADD, TYSIGNEDLONGINT);
+					if(converted_to_int==TRUE)
+					{
+						b_convert(TYSIGNEDLONGINT, tag);
+					}
+					break;
+
+    case NEW_OP:       b_alloc_arglist(4);
+                       b_push_const_int(getSize(ty_query_ptr(expr->u.unop.operand->type, &id, &type)));
+	                   b_load_arg(TYUNSIGNEDINT);
+                       b_funcall_by_name("malloc", TYPTR);
+                       b_assign(TYPTR);
+                       b_pop();
+                       break;
+   
+    case DISPOSE_OP:   b_load_arg(TYPTR);
+                       b_funcall_by_name("free", TYVOID);
+                       break;
+
+    case DEREF_OP:     b_deref(tag);
+                       break;
+
+    case SET_RETURN_OP: b_set_return(ty_query(expr->u.unop.operand->type));
+                        break;
+    default: bug("Error: Hit default in encode_unop"); 
+  }
+}
+
+void encode_binop(EXPR_BINOP b_op, EXPR expr)
+{
+  TYPETAG type_tag;
+  TYPETAG left_type_tag, right_type_tag;
+  encode_expr(expr->u.binop.left);
+  encode_expr(expr->u.binop.right);
+  type_tag = ty_query(expr->type);
+  left_type_tag = ty_query(expr->u.binop.left->type);
+  right_type_tag = ty_query(expr->u.binop.right->type);
+
+ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, REALDIV_OP, EQ_OP, LESS_OP, LE_OP,
+    GE_OP, GREATER_OP, ASSIGN_OP, NE_OP, BIN_SUCC_OP, BIN_PRED_OP
+
+  switch (b_op) 
+  {
+    
+    case ADD_OP:  b_arith_rel_op(B_ADD, type_tag); break;
+
+	case SUB_OP: b_arith_rel_op(B_SUB, type_tag); break;
+
+	case MUL_OP: b_arith_rel_op(B_MULT, type_tag);break;
+
+	case DIV_OP: b_arith_rel_op(B_DIV, type_tag); break;
+
+	case MOD_OP: b_arith_rel_op(B_MOD, type_tag); break;
+
+	case REALDIV_OP: b_arith_rel_op(B_DIV, type_tag); break;
+
+	case EQ_OP:b_arith_rel_op(B_EQ, type_tag);   break;
+
+	case LESS_OP: b_arith_rel_op(B_LT, type_tag); break;
+
+	case LE_OP: b_arith_rel_op(B_LE, type_tag); break;
+
+	case NE_OP: b_arith_rel_op(B_NE, type_tag); break;
+
+	case GE_OP: b_arith_rel_op(B_GE, type_tag); break;
+
+	case GREATER_OP: b_arith_rel_op(B_GT, type_tag); break;
+
+	case ASSIGN_OP:  if(expr->u.binop.left->tag == LVAR)
+			 		 {
+			     		b_push_loc_addr(expr->u.binop.left->u.lvar.offset);
+    	             }
+      
+     		     	if(left_type_tag != right_type_tag)
+			 		{
+	                	b_convert(right_type_tag, left_type_tag);
+                    }
+    		        b_assign(left_type_tag);
+     			    b_pop();
+   		            break;            
+   	default: bug("Error: Hit default in encode_binop");	            
+  }
+}
+
+void encode_funct_call(EXPR funct, EXPR_LIST args)
+{
+	int arg_list_size_align;
+	EXPR_LIST funct_arg_list;
+	char *funct_gname;
+	TYPE funct_ret_type;
+	TYPETAG arg_tag;
+	PARAM_LIST funct_params;
+	BOOLEAN funct_arg_flag;
+
+	funct_ret_type = ty_query_func(funct->type, &funct_params, &funct_arg_flag);
+	arg_list_size_align = 0;
+	funct_arg_list = args;
+
+	if(funct->tag == GID) 
+	{ 
+		funct_gname = st_get_id_str(funct->u.gid);
+	}
+	funct_arg_list = args;
+
+	while(funct_arg_list != NULL)
+	{
+
+		if(ty_query(funct_arg_list->expr->type)==TYDOUBLE||ty_query(funct_arg_list->expr->type)==TYFLOAT)
+		{
+			arg_list_size_align+=8;
+		} 
+		else
+		{ 
+		    arg_list_size_align+=4;
+		}
+
+		funct_arg_list=funct_arg_list->next;
+	}
+
+  b_alloc_arglist(arg_list_size_align);
+  funct_arg_list=args;
+  while(funct_arg_list!=NULL) 
+     {
+
+  	  encode_expr(funct_arg_list->expr);
+    	  arg_tag = ty_query(funct_arg_list->expr->type);
+  	  if(funct_params != NULL)
+ 	     {
+  		    if(funct_params->is_ref==TRUE)
+			{ 
+				if(is_lval(funct_arg_list->expr)==FALSE)
+				{
+					bug("Error: lval expected in function argument in function argument in encode_funct_call");
+				} 
+	
+				if(ty_test_equality(funct_arg_list->expr->type, funct_params->type)==FALSE) 
+				{
+					error("Param type mismatch in encode_funct_call");
+				}
+
+				b_load_arg(TYPTR);
+    		} 
+		    else 
+                         { 
+				if(is_lval(funct_arg_list->expr)==TRUE) 
+                                   {
+	 				 b_deref(arg_tag);
+			      	   }
+			       if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR) 
+				   { 
+
+	 				 b_convert(arg_tag,TYSIGNEDLONGINT);
+					  b_load_arg(TYSIGNEDLONGINT);
+				   } 
+				else if(arg_tag==TYFLOAT) 
+				   { 
+	 				 b_convert(arg_tag,TYDOUBLE);
+	 				 b_load_arg(TYDOUBLE);
+				    } 
+				else 
+				    { 
+	 				 b_load_arg(arg_tag);
+				    }
+    	                  }
+             } 
+         else 
+             {     
+		if(is_lval(funct_arg_list->expr)==TRUE) 
+		    {
+	 		 b_deref(arg_tag);
+		    }
+		if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR) 
+		    { 
+	 		 b_convert(arg_tag, TYSIGNEDLONGINT);
+		         b_load_arg(TYSIGNEDLONGINT);
+	            } 
+                else if(arg_tag==TYFLOAT)
+                   { 
+	  		b_convert(arg_tag,TYDOUBLE);
+		        b_load_arg(TYDOUBLE);
+		   } 
+		else 
+		   { 
+		        b_load_arg(arg_tag);
+		   }
+              }
+
+    funct_arg_list=funct_arg_list->next;
+
+    if(funct_params!=NULL) 
+	{
+            funct_params=funct_params->next;
+    }
+
+   }
+  
+  
+  b_funcall_by_name(funct_gname,ty_query(funct_ret_type));
+
+
+}
 
