@@ -583,7 +583,7 @@ EXPR make_id_expr(ST_ID id) {
          break;
 
       default: ("Hit default in make_id_expr");
-         break;
+         
    }
    return ret;
 }// end make_id_expr

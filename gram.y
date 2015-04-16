@@ -908,13 +908,13 @@ variable_or_function_access_no_standard_function:
   ;
 
 variable_or_function_access_no_id:
-    p_OUTPUT
-  | p_INPUT
-  | variable_or_function_access '.' new_identifier
-  | '(' expression ')'
-  | variable_or_function_access pointer_char
-  | variable_or_function_access '[' index_expression_list ']'
-  | variable_or_function_access_no_standard_function '(' actual_parameter_list ')'
+    p_OUTPUT                                           {}
+  | p_INPUT                                            {}
+  | variable_or_function_access '.' new_identifier     {} 
+  | '(' expression ')'                                 {$$ = $2;}
+  | variable_or_function_access pointer_char            {$$ = make_un_expr(INDIR_OP, $1);}
+  | variable_or_function_access '[' index_expression_list ']'   {make_array_access_expr($1,$3);}
+  | variable_or_function_access_no_standard_function '('      actual_parameter_list ')'  {}
   | p_NEW '(' variable_access_or_typename ')'	{$$ = make_un_expr(NEW_OP, $3);}
   ;
 
@@ -940,65 +940,65 @@ standard_functions:
   ;
 
 optional_par_actual_parameter:
-    /* empty */
-  | '(' actual_parameter ')'
+    /* empty */                 {$$ = NULL;}
+  | '(' actual_parameter ')'   {$$ = expr_list_reverse($2);}
   ;
 
 rts_fun_optpar:
-    p_EOF	{$$ = NULL_EOF_OP;}
+    p_EOF	    {$$ = NULL_EOF_OP;}
   | p_EOLN  	{$$ = NULL_EOLN_OP;}
   ;
-//left off here
+
 rts_fun_onepar:
-    p_ABS
-  | p_SQR
-  | p_SIN
-  | p_COS
-  | p_EXP
-  | p_LN
-  | p_SQRT
-  | p_ARCTAN
-  | p_ARG
-  | p_TRUNC
-  | p_ROUND
-  | p_CARD
-  | p_ORD
-  | p_CHR
-  | p_ODD
-  | p_EMPTY
-  | p_POSITION
-  | p_LASTPOSITION
-  | p_LENGTH
-  | p_TRIM
-  | p_BINDING
-  | p_DATE
-  | p_TIME
+    p_ABS          {}
+  | p_SQR          {} 
+  | p_SIN          {} 
+  | p_COS          {}
+  | p_EXP          {}
+  | p_LN           {}
+  | p_SQRT         {}
+  | p_ARCTAN       {} 
+  | p_ARG          {}
+  | p_TRUNC        {}
+  | p_ROUND        {} 
+  | p_CARD         {}
+  | p_ORD          {$$ = ORD_OP;} 
+  | p_CHR          {}
+  | p_ODD          {} 
+  | p_EMPTY        {$$ = EMPTY_OP;}
+  | p_POSITION     {} 
+  | p_LASTPOSITION {} 
+  | p_LENGTH       {}
+  | p_TRIM         {}
+  | p_BINDING      {}
+  | p_DATE         {} 
+  | p_TIME         {}
   ;
 
 rts_fun_parlist:
-    p_SUCC    /* One or two args */
-  | p_PRED    /* One or two args */
+    p_SUCC    /* One or two args */  {$$ = UN_SUCC_OP;}
+  | p_PRED    /* One or two args */  {$$ = UN_PRED_OP;}
   ;
 
 relational_operator:
-    LEX_NE
-  | LEX_LE
-  | LEX_GE
-  | '='
-  | '<'
-  | '>'      {}
+    LEX_NE      {$$ = NE_OP;}
+  | LEX_LE     {$$ = LE_OP;} 
+  | LEX_GE     {$$ = GE_OP;}
+  | '='       {$$ = EQ_OP;}
+  | '<'       {$$ = LESS_OP;}
+  | '>'      {$$ = GREATER_OP;}
   ;
 
 multiplying_operator:
-    LEX_DIV
-  | LEX_MOD
-  | '/'
-  | '*'
+    LEX_DIV       {$$ = DIV_OP;}
+  | LEX_MOD       {$$ = MOD_OP;} 
+  | '/'           {$$ = REALDIV_OP;}
+  | '*'           {$$ = MUL_OP;}   
   ;
 
 adding_operator:
-    '-'
-  | '+'
+    '-'   {$$ = SUB_OP;}
+  | '+'   {$$ = ADD_OP;}
   ;
 
 semi:
