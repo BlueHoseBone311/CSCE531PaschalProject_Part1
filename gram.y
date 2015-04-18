@@ -869,7 +869,7 @@ term:
 
 signed_primary:
     primary
-  | sign signed_primary	{$$ = make_UN_EXPR($1, $2);}
+  | sign signed_primary	{$$ = make_un_expr($1, $2);}
   ;
 
 primary:
@@ -913,7 +913,7 @@ variable_or_function_access_no_id:
   | variable_or_function_access '.' new_identifier     {} 
   | '(' expression ')'                                 {$$ = $2;}
   | variable_or_function_access pointer_char            {$$ = make_un_expr(INDIR_OP, $1);}
-  | variable_or_function_access '[' index_expression_list ']'   {make_array_access_expr($1,$3);}
+  | variable_or_function_access '[' index_expression_list ']'   {}
   | variable_or_function_access_no_standard_function '('      actual_parameter_list ')'  {}
   | p_NEW '(' variable_access_or_typename ')'	{$$ = make_un_expr(NEW_OP, $3);}
   ;
