@@ -161,7 +161,8 @@ int base_top = -1;
 /*Explicit Typing*/
 %type <y_cint> variable_declaration simple_decl 
 %type <y_int> LEX_INTCONST 
-%type <y_string> LEX_STRCONST
+%type <y_real> LEX_REALCONST 
+%type <y_string> LEX_STRCONST string
 %type <y_type> typename type_denoter 
 %type <y_type> subrange_type new_procedural_type ordinal_index_type
 %type <y_type> array_type new_structured_type
@@ -179,8 +180,7 @@ int base_top = -1;
 %type <y_expr> boolean_expression index_expression_item
 %type <y_expr> simple_expression term signed_primary primary factor
 %type <y_expr> signed_factor variable_or_function_access predefined_literal
-%type <y_expr> variable_or_function_access_no_as standard_functions
-%type <y_expr> variable_or_function_access_no_standard_function
+	%type <y_expr> variable_or_function_access_no_standard_function
 %type <y_expr> variable_or_function_access_no_id rest_of_statement
 %type <y_expr> assignment_or_call_statement standard_procedure_statement
 %type <y_expr> variable_access_or_typename optional_par_actual_parameter
