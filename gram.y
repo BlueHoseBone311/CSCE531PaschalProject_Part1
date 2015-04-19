@@ -712,7 +712,7 @@ empty_statement:
 /* function calls */
 
 optional_par_actual_parameter_list:
-    /* empty */		{$$ = NULL;}
+    /* empty */		                {$$ = NULL;}
   | '(' actual_parameter_list ')'	{$$ = expr_list_reverse($2);}
   ;
 
@@ -743,15 +743,15 @@ rest_of_statement:
   ;
 
 standard_procedure_statement:
-    rts_proc_onepar '(' actual_parameter ')'
-  | rts_proc_parlist '(' actual_parameter_list ')'
-  | p_WRITE optional_par_write_parameter_list
-  | p_WRITELN optional_par_write_parameter_list
-  | p_READ optional_par_actual_parameter_list
-  | p_READLN optional_par_actual_parameter_list
-  | p_PAGE optional_par_actual_parameter_list
+    rts_proc_onepar '(' actual_parameter ')'        {}
+  | rts_proc_parlist '(' actual_parameter_list ')'  {}
+  | p_WRITE optional_par_write_parameter_list       {} 
+  | p_WRITELN optional_par_write_parameter_list     {} 
+  | p_READ optional_par_actual_parameter_list       {}
+  | p_READLN optional_par_actual_parameter_list     {} 
+  | p_PAGE optional_par_actual_parameter_list       {} 
   | p_DISPOSE '(' actual_parameter ')'	{$$ = make_un_expr(DISPOSE_OP, $3);}
-  | p_DISPOSE '(' actual_parameter ',' actual_parameter_list ')'
+  | p_DISPOSE '(' actual_parameter ',' actual_parameter_list ')'  {}
   ;
 
 optional_par_write_parameter_list:
@@ -886,10 +886,18 @@ signed_factor:
   ;
 
 factor:
-    variable_or_function_access
+    variable_or_function_access { if (ty_query($1->type) == TYFUNC) 
+                                  {
+                                      $$ = make_fcall_expr($1, NULL);
+                                  } 
+                                  else 
+                                  { 
+                                      $$ = $1; 
+                                  }
+                                }
   | constant_literal
   | unsigned_number
-  | set_constructor
+  | set_constructor       {}
   | LEX_NOT signed_factor	{$$ = make_un_expr(NOT_OP, $2);}
   | address_operator factor	{$$ = make_un_expr(ADDRESS_OP, $2);}
   ;
@@ -941,8 +949,8 @@ standard_functions:
   ;
 
 optional_par_actual_parameter:
-    /* empty */                 {$$ = NULL;}
-  | '(' actual_parameter ')'   {$$ = expr_list_reverse($2);}
+    /* empty */                {} 
+  | '(' actual_parameter ')'   {$$ = $2;}
   ;
 
 rts_fun_optpar:
