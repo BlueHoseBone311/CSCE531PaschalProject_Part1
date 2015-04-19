@@ -213,16 +213,17 @@ pascal_program:
   ;
 
 main_program_declaration:
-    program_heading semi any_global_declaration_part statement_part
+    program_heading semi any_global_declaration_part     {b_func_prologue("main");}
+    statement_part                                       {b_func_epilogue("main");}
   ;
 
 program_heading:
     LEX_PROGRAM new_identifier optional_par_id_list
   ;
 
-optional_par_id_list:
-    /* empty */
-  | '(' id_list ')'
+optional_par_id_list: 
+    /* empty */        {}
+  | '(' id_list ')'   {$$=$2;}
   ;
 
 id_list:
