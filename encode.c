@@ -441,22 +441,7 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
   switch(op)
    {
 
-    case INDIR_OP:   break;
-    case UPLUS_OP:   break;
-    case CONVERT_OP: if(tag==TYSUBRANGE)
-					{
-						base_type = ty_query_subrange(expr->u.unop.operand->type, &low, &high);
-						b_convert(TYSUBRANGE, ty_query(base_type));
-					}
-					else if(tag==TYPTR)
-					{
-
-					}
-					else
-					{
-						b_convert(tag, rval_tag);
-					}
-					break;
+     case UPLUS_OP:   break;
      case NEG_OP:   b_negate(tag); break;
 
      case ORD_OP: 	if(tag==TYUNSIGNEDCHAR)
@@ -511,8 +496,22 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
     case DEREF_OP:     b_deref(tag);
                        break;
 
-    case SET_RETURN_OP: b_set_return(ty_query(expr->u.unop.operand->type));
-                        break;
+    case SET_RETURN_OP: b_set_return(ty_query(expr->u.unop.operand->type)); break;
+    case INDIR_OP:   break;
+    case CONVERT_OP: if(tag==TYSUBRANGE)
+					{
+						base_type = ty_query_subrange(expr->u.unop.operand->type, &low, &high);
+						b_convert(TYSUBRANGE, ty_query(base_type));
+					}
+					else if(tag==TYPTR)
+					{
+
+					}
+					else
+					{
+						b_convert(tag, rval_tag);
+					}
+					break;
     default: bug("Error: Hit default in encode_unop");
   }
 }
@@ -599,12 +598,11 @@ void encode_funct_call(EXPR funct, EXPR_LIST args)
   b_alloc_arglist(arg_list_size_align);
   funct_arg_list=args;
   while(funct_arg_list!=NULL)
-     {
-
+  {
   	  encode_expr(funct_arg_list->expr);
-    	  arg_tag = ty_query(funct_arg_list->expr->type);
+      arg_tag = ty_query(funct_arg_list->expr->type);
   	  if(funct_params != NULL)
- 	     {
+ 	  {
   		    if(funct_params->is_ref==TRUE)
 			{
 				if(is_lval(funct_arg_list->expr)==FALSE)
@@ -616,66 +614,61 @@ void encode_funct_call(EXPR funct, EXPR_LIST args)
 				{
 					error("Param type mismatch in encode_funct_call");
 				}
-
 				b_load_arg(TYPTR);
     		}
 		    else
-                         {
+            {
 				if(is_lval(funct_arg_list->expr)==TRUE)
-                                   {
+                {
 	 				 b_deref(arg_tag);
-			      	   }
-			       if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR)
-				   {
+			    }
+		        if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR)
+			    {
 
-	 				 b_convert(arg_tag,TYSIGNEDLONGINT);
-					  b_load_arg(TYSIGNEDLONGINT);
-				   }
+ 					b_convert(arg_tag,TYSIGNEDLONGINT);
+				  	b_load_arg(TYSIGNEDLONGINT);
+			    }
 				else if(arg_tag==TYFLOAT)
-				   {
-	 				 b_convert(arg_tag,TYDOUBLE);
-	 				 b_load_arg(TYDOUBLE);
-				    }
+			    {
+					b_convert(arg_tag,TYDOUBLE);
+					b_load_arg(TYDOUBLE);
+				}
 				else
-				    {
-	 				 b_load_arg(arg_tag);
-				    }
-    	                  }
-             }
+				{
+					b_load_arg(arg_tag);
+				}
+    	    }
+        }
          else
-             {
-		if(is_lval(funct_arg_list->expr)==TRUE)
+         {
+			if(is_lval(funct_arg_list->expr)==TRUE)
 		    {
-	 		 b_deref(arg_tag);
+	 			 b_deref(arg_tag);
 		    }
-		if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR)
-		    {
-	 		 b_convert(arg_tag, TYSIGNEDLONGINT);
-		         b_load_arg(TYSIGNEDLONGINT);
-	            }
-                else if(arg_tag==TYFLOAT)
-                   {
-	  		b_convert(arg_tag,TYDOUBLE);
-		        b_load_arg(TYDOUBLE);
-		   }
-		else
-		   {
+			if(arg_tag==TYSIGNEDCHAR||arg_tag==TYUNSIGNEDCHAR)
+			{
+		 		 b_convert(arg_tag, TYSIGNEDLONGINT);
+			     b_load_arg(TYSIGNEDLONGINT);
+		    }
+            else if(arg_tag==TYFLOAT)
+           	{
+		  		b_convert(arg_tag,TYDOUBLE);
+	        	b_load_arg(TYDOUBLE);
+		    }
+			else
+			{
 		        b_load_arg(arg_tag);
-		   }
-              }
+			}
+        }
 
-    funct_arg_list=funct_arg_list->next;
+	    funct_arg_list=funct_arg_list->next;
 
-    if(funct_params!=NULL)
-	{
+	    if(funct_params!=NULL)
+		{
             funct_params=funct_params->next;
-    }
+	    }
 
    }
-
-
-  b_funcall_by_name(funct_global_name,ty_query(funct_ret_type));
-
-
+   b_funcall_by_name(funct_global_name,ty_query(funct_ret_type));
 }
 

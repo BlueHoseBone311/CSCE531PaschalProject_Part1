@@ -12,6 +12,7 @@
 #include "message.h"
 #include "backend-x86.h"
 #include "tree.h"
+#include "defs.h"
 
 /*Primary method to set alignment for various types*/
 
