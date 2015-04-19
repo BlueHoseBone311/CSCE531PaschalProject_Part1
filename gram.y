@@ -411,7 +411,7 @@ enumerator:
   ;
 
 subrange_type:
-    constant LEX_RANGE constant   {$$ = check_subrange($1, $3);}
+    constant LEX_RANGE constant   {$$ = check_subrange_expr($1, $3);}
   ;
 
 new_pointer_type:
