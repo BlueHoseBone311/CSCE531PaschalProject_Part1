@@ -829,7 +829,7 @@ variable_access_or_typename:
 
 index_expression_list:
       index_expression_item	{$$ = expr_prepend($1, NULL);}
-    | index_expression_list ',' index_expression_item	{$$ = expr_prepend($1, $3);}
+    | index_expression_list ',' index_expression_item	{$$ = expr_prepend($3, $1);}
     ;
 
 index_expression_item:
