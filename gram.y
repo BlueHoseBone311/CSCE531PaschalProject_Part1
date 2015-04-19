@@ -172,7 +172,7 @@ int base_top = -1;
 %type <y_paramlist> procedural_type_formal_parameter
 %type <y_indexlist> array_index_list
 %type <y_stid> identifier new_identifier new_identifier_1
-%type <y_varidlist> id_list
+%type <y_varidlist> id_list optional_par_id_list
 
 /*Project II*/
 %type <y_expr> unsigned_number number constant constant_literal
@@ -191,7 +191,7 @@ int base_top = -1;
 %type <y_nullop> rts_fun_optpar
 %type <y_unop> sign rts_fun_onepar rts_fun_parlist
 %type <y_binop> relational_operator multiplying_operator adding_operator
-
+%type <y_exprid> variable_or_function_access_maybe_assignment
 /* Precedence rules */
 
 /* The following precedence declarations are just to avoid the dangling
@@ -728,13 +728,13 @@ actual_parameter:
 /* ASSIGNMENT and procedure calls */
 
 assignment_or_call_statement:
-    variable_or_function_access_maybe_assignment rest_of_statement
+    variable_or_function_access_maybe_assignment rest_of_statement {$$ = check_assign_or_proc_call($1.expr, $1.id, $2);}
   ;
 
 variable_or_function_access_maybe_assignment:
-    identifier
-  | address_operator variable_or_function_access
-  | variable_or_function_access_no_id
+    identifier                                       { $$.expr = make_id_expr($1); $$.id = $1;}
+  | address_operator variable_or_function_access     {}
+  | variable_or_function_access_no_id                {$$.expr = $1; $$.id = NULL;}
   ;
 
 rest_of_statement:
