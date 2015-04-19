@@ -534,29 +534,17 @@ ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, REALDIV_OP, EQ_OP, LESS_OP, LE_OP,
   {
 
     case ADD_OP:  b_arith_rel_op(B_ADD, type_tag); break;
-
 	case SUB_OP: b_arith_rel_op(B_SUB, type_tag); break;
-
 	case MUL_OP: b_arith_rel_op(B_MULT, type_tag);break;
-
 	case DIV_OP: b_arith_rel_op(B_DIV, type_tag); break;
-
 	case MOD_OP: b_arith_rel_op(B_MOD, type_tag); break;
-
 	case REALDIV_OP: b_arith_rel_op(B_DIV, type_tag); break;
-
 	case EQ_OP:b_arith_rel_op(B_EQ, type_tag);   break;
-
 	case LESS_OP: b_arith_rel_op(B_LT, type_tag); break;
-
 	case LE_OP: b_arith_rel_op(B_LE, type_tag); break;
-
 	case NE_OP: b_arith_rel_op(B_NE, type_tag); break;
-
 	case GE_OP: b_arith_rel_op(B_GE, type_tag); break;
-
 	case GREATER_OP: b_arith_rel_op(B_GT, type_tag); break;
-
 	case ASSIGN_OP:  if(expr->u.binop.left->tag == LVAR)
 			 		 {
 			     		b_push_loc_addr(expr->u.binop.left->u.lvar.offset);
@@ -577,11 +565,11 @@ void encode_funct_call(EXPR funct, EXPR_LIST args)
 {
 	int arg_list_size_align;
 	EXPR_LIST funct_arg_list;
-	char *funct_gname;
-	TYPE funct_ret_type;
-	TYPETAG arg_tag;
 	PARAM_LIST funct_params;
 	BOOLEAN funct_arg_flag;
+	char *funct_global_name;
+	TYPE funct_ret_type;
+	TYPETAG arg_tag;
 
 	funct_ret_type = ty_query_func(funct->type, &funct_params, &funct_arg_flag);
 	arg_list_size_align = 0;
@@ -589,7 +577,7 @@ void encode_funct_call(EXPR funct, EXPR_LIST args)
 
 	if(funct->tag == GID)
 	{
-		funct_gname = st_get_id_str(funct->u.gid);
+		funct_global_name = st_get_id_str(funct->u.gid);
 	}
 	funct_arg_list = args;
 
@@ -686,7 +674,7 @@ void encode_funct_call(EXPR funct, EXPR_LIST args)
    }
 
 
-  b_funcall_by_name(funct_gname,ty_query(funct_ret_type));
+  b_funcall_by_name(funct_global_name,ty_query(funct_ret_type));
 
 
 }

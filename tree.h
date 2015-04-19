@@ -208,6 +208,8 @@ void build_func_decl(ST_ID id, TYPE type, DIRECTIVE dir);
 
 int enter_function(ST_ID id, TYPE type, char *global_func_name);
 
+void install_local_params(PARAM_LIST list);
+
 //Installs parameters that are used in the enter_function
 void install_params(PARAM_LIST list);
 
