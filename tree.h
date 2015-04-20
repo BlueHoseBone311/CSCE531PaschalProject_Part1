@@ -89,6 +89,10 @@ typedef struct exprnode {
     } u;
 } EXPR_NODE, *EXPR;
 
+typedef struct {
+    ST_ID	id;
+    TYPE	type;
+} FUNCTION_HEAD;
 //records the current func id to detect return values.
 extern ST_ID func_stack_id[BS_DEPTH];
 extern int func_top;

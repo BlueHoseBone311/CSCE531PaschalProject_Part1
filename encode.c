@@ -419,7 +419,7 @@ void encode_expr(EXPR expr)
 	case ARRAY_ACCESS: break;
 	case LFUN: break;
     case ERROR: break;
-    default: bug("Error: Hit default in encode_expr");
+    default: bug("Hit default in encode_expr with typetag (%d)", expr->tag);
 
   }//End Switch
 }//End encode_expr
@@ -512,7 +512,7 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
 						b_convert(tag, rval_tag);
 					}
 					break;
-    default: bug("Error: Hit default in encode_unop");
+    //default: bug("Hit default in encode_unop with unop tag (%d)",op);
   }
 }
 
@@ -556,7 +556,7 @@ ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, REALDIV_OP, EQ_OP, LESS_OP, LE_OP,
     		        b_assign(left_type_tag);
      			    b_pop();
    		            break;
-   	default: bug("Error: Hit default in encode_binop");
+   	default: bug("Hit default in encode_binop with binop tag (%d)",b_op);
   }
 }
 

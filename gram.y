@@ -90,12 +90,15 @@ int base_top = -1;
     INDEX_LIST	  y_indexlist;
     PARAM_LIST    y_paramlist;  
     TYPE          y_type; 
-    EXPR	  y_expr;
+    EXPR	        y_expr;
     EXPR_LIST	  y_exprlist;
     EXPR_NULLOP   y_nullop;
     EXPR_UNOP     y_unop;
     EXPR_BINOP    y_binop;
     EXPR_ID       y_exprid;
+    DIRECTIVE     y_dir;
+    FUNCTION_HEAD y_funchead;
+
 }
 
 %token <y_string> LEX_ID
@@ -192,6 +195,14 @@ int base_top = -1;
 %type <y_unop> sign rts_fun_onepar rts_fun_parlist
 %type <y_binop> relational_operator multiplying_operator adding_operator
 %type <y_exprid> variable_or_function_access_maybe_assignment
+
+%type <y_type> new_ordinal_type
+
+%type <y_cint> variable_declaration_part variable_declaration_list
+%type <y_cint>  any_decl any_declaration_part function_declaration
+%type <y_cint> repetitive_statement for_direction
+%type <y_dir> directive directive_list
+%type <y_funchead> function_heading
 /* Precedence rules */
 
 /* The following precedence declarations are just to avoid the dangling
@@ -298,24 +309,24 @@ new_identifier_1:
   ;
 
 any_global_declaration_part:
-    /* empty */
-  | any_global_declaration_part any_decl
+    /* empty */                            
+  | any_global_declaration_part any_decl  
   ;
 
 any_declaration_part:
-    /* empty */
-  | any_declaration_part any_decl
+    /* empty */                      {$$=0;}
+  | any_declaration_part any_decl    {$$ = $1+$2;} 
   ;
 
 any_decl:
-    simple_decl
-  | function_declaration
+    simple_decl               {$$ = $1;} 
+  | function_declaration     {$$ = 0;}
   ;
 
 simple_decl:
     constant_definition_part    {}
   | type_definition_part        {}
-  | variable_declaration_part   {}
+  | variable_declaration_part   
   ;
 
 /* constant definition part */
@@ -361,7 +372,7 @@ constant_literal:
   ;
 
 predefined_literal:
-    LEX_NIL	{$$ = make_strconst_expr($1);}
+    LEX_NIL	{$$ = make_null_expr(NIL_OP);}
   | p_FALSE	{$$ = make_intconst_expr(0, ty_build_basic(TYSIGNEDCHAR));}
   | p_TRUE	{$$ = make_intconst_expr(1, ty_build_basic(TYSIGNEDCHAR));}
   ;
@@ -386,20 +397,20 @@ type_definition:
   ;
 
 type_denoter:
-    typename            {}
-  | new_ordinal_type	{}
-  | new_pointer_type	{}
-  | new_procedural_type	{}
-  | new_structured_type	{}
+    typename           
+  | new_ordinal_type	
+  | new_pointer_type	
+  | new_procedural_type	
+  | new_structured_type	
   ;
 
 new_ordinal_type:
     enumerated_type     {}
-  | subrange_type  	{}
+  | subrange_type  	
   ;
 
 enumerated_type:
-    '(' enum_list ')'
+    '(' enum_list ')' {}
   ;
 
 enum_list:
@@ -421,7 +432,7 @@ new_pointer_type:
 
 pointer_char:
     '^'
-  | '@'
+  | '@' {}
   ;
 
 pointer_domain_type:
@@ -441,14 +452,15 @@ optional_procedural_type_formal_parameter_list:
 
 procedural_type_formal_parameter_list:
     procedural_type_formal_parameter
-  | procedural_type_formal_parameter_list semi procedural_type_formal_parameter {$$ = concat_param_list($1, $3);}
+  | procedural_type_formal_parameter_list semi 
+  procedural_type_formal_parameter {$$ = concat_param_list($1, $3);}
   ;
 
 procedural_type_formal_parameter:
     id_list                    {$$=build_param_list($1,ty_build_basic(TYERROR),FALSE);}                   
   | id_list ':' typename        {$$ = build_param_list($1, $3, FALSE);}
   | LEX_VAR id_list ':' typename {$$ = build_param_list($2, $4, TRUE);}
-  | LEX_VAR id_list              {$$=build_param_list($2,ty_build_basic(TYERROR),TRUE);} /*this would be an error => treat as such */
+  | LEX_VAR id_list              {$$=build_param_list($2,ty_build_basic(TYERROR),TRUE);} 
   ;
 
 new_structured_type:
@@ -470,7 +482,7 @@ array_index_list:
 
 
 ordinal_index_type:
-    new_ordinal_type     {}     
+    new_ordinal_type     
   | typename
   ;
 
@@ -543,12 +555,12 @@ one_case_constant:
    using a simple inherited attribute of type int */
 
 variable_declaration_part:
-    LEX_VAR variable_declaration_list
+    LEX_VAR variable_declaration_list      {$$ = $2;}
   ;
 
 variable_declaration_list:
     variable_declaration
-  | variable_declaration_list variable_declaration
+  | variable_declaration_list variable_declaration     {$$ = $1+$2;}
   ;
 
 variable_declaration:
@@ -556,23 +568,26 @@ variable_declaration:
   ;
 
 function_declaration:
-    function_heading semi directive_list semi
-  | function_heading semi any_declaration_part statement_part semi
+    function_heading semi directive_list semi   { build_func_decl($1.id, $1.type, $3); }
+  | function_heading semi { $<y_cint>$ = enter_function($1.id, $1.type, st_get_id_str($1.id)); }
+  any_declaration_part   {begin_funct_body(st_get_id_str($1.id), $1.type, $<y_cint>3);}
+  statement_part semi    {end_funct_body(st_get_id_str($1.id), $1.type);}
   ;
 
 function_heading:
-    LEX_PROCEDURE new_identifier optional_par_formal_parameter_list
-  | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype
+    LEX_PROCEDURE new_identifier optional_par_formal_parameter_list {$$.id = $2; $$.type = ty_build_func(ty_build_basic(TYVOID),NULL, FALSE);}
+  | LEX_FUNCTION new_identifier optional_par_formal_parameter_list functiontype { $$.id = $2; $$.type = ty_build_func($4, NULL ,FALSE);}
+  
   ;
 
 directive_list:
-    directive
-  | directive_list semi directive
+    directive                             
+  | directive_list semi directive    {}
   ;
 
 directive:
-    LEX_FORWARD
-  | LEX_EXTERNAL
+    LEX_FORWARD    {$$ = DIR_FORWARD;}
+  | LEX_EXTERNAL   {$$ = DIR_EXTERNAL;} 
   ;
 
 functiontype:
@@ -662,51 +677,51 @@ optional_semicolon_or_else_branch:
   ;
 
 case_element_list:
-    case_element
-  | case_element_list semi case_element
+    case_element                         {} 
+  | case_element_list semi case_element  {}
   ;
 
 case_element:
-    case_constant_list ':' statement
+    case_constant_list ':' statement   {}
   ;
 
 case_default:
-    LEX_ELSE
-  | semi LEX_ELSE
+    LEX_ELSE       {} 
+  | semi LEX_ELSE  {}
   ;
 
 repetitive_statement:
-    repeat_statement
-  | while_statement
-  | for_statement
+    repeat_statement   {} 
+  | while_statement    {} 
+  | for_statement      {}
   ;
 
 repeat_statement:
-    LEX_REPEAT statement_sequence LEX_UNTIL boolean_expression
+    LEX_REPEAT statement_sequence LEX_UNTIL boolean_expression {}
   ;
 
 while_statement:
-    LEX_WHILE boolean_expression LEX_DO statement
+    LEX_WHILE boolean_expression LEX_DO statement  {}
   ;
 
 for_statement:
-    LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO statement
+    LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO statement {}
   ;
 
 for_direction:
-    LEX_TO
-  | LEX_DOWNTO
+    LEX_TO           {} 
+  | LEX_DOWNTO       {}
   ;
 
 simple_statement:
-    empty_statement
+    empty_statement               {} 
   | assignment_or_call_statement 	{encode_expr($1);}
   | standard_procedure_statement	{encode_expr($1);}
-  | statement_extensions
+  | statement_extensions          {}
   ;
 
 empty_statement:
-    /* empty */ %prec lower_than_error
+    /* empty */ %prec lower_than_error {}
   ;
 
 /* function calls */
@@ -755,72 +770,72 @@ standard_procedure_statement:
   ;
 
 optional_par_write_parameter_list:
-    /* empty */
-  | '(' write_actual_parameter_list ')'
+    /* empty */                         {} 
+  | '(' write_actual_parameter_list ')' {}
   ;
 
 write_actual_parameter_list:
-    write_actual_parameter
-  | write_actual_parameter_list ',' write_actual_parameter
+    write_actual_parameter   {}
+  | write_actual_parameter_list ',' write_actual_parameter {}
   ;
 
 write_actual_parameter:
-    actual_parameter
-  | actual_parameter ':' expression
-  | actual_parameter ':' expression ':' expression
+    actual_parameter  {}
+  | actual_parameter ':' expression  {}
+  | actual_parameter ':' expression ':' expression  {}
   ;
 
 /* run time system calls with one parameter */
 rts_proc_onepar:
-    p_PUT
-  | p_GET
-  | p_MARK
-  | p_RELEASE
-  | p_CLOSE
-  | p_UPDATE
-  | p_GETTIMESTAMP
-  | p_UNBIND
+    p_PUT                  {}
+  | p_GET                  {}
+  | p_MARK                 {}
+  | p_RELEASE              {}
+  | p_CLOSE                {} 
+  | p_UPDATE               {}
+  | p_GETTIMESTAMP         {}  
+  | p_UNBIND               {}
   ;
 
 rts_proc_parlist:
-    p_REWRITE     /* Up to three args */
-  | p_RESET       /* Up to three args */
-  | p_EXTEND      /* Up to three args */
-  | bp_APPEND     /* Up to three args */
-  | p_PACK        /* Three args */
-  | p_UNPACK      /* Three args */
-  | p_BIND        /* Two args */
-  | p_SEEKREAD
-  | p_SEEKWRITE
-  | p_SEEKUPDATE
-  | p_DEFINESIZE  /* Two args */
-  | LEX_AND           /* Two args */
-  | LEX_OR            /* Two args */
-  | LEX_NOT           /* One arg */
-  | LEX_XOR        /* Two args */
-  | LEX_SHL           /* Two args */
-  | LEX_SHR           /* Two args */
+    p_REWRITE     /* Up to three args */ {}
+  | p_RESET       /* Up to three args */ {}
+  | p_EXTEND      /* Up to three args */ {} 
+  | bp_APPEND     /* Up to three args */ {} 
+  | p_PACK        /* Three args */       {} 
+  | p_UNPACK      /* Three args */       {}
+  | p_BIND        /* Two args */         {}
+  | p_SEEKREAD                           {}
+  | p_SEEKWRITE                          {}
+  | p_SEEKUPDATE                         {}
+  | p_DEFINESIZE  /* Two args */         {} 
+  | LEX_AND           /* Two args */     {}    
+  | LEX_OR            /* Two args */     {} 
+  | LEX_NOT           /* One arg */      {}  
+  | LEX_XOR        /* Two args */        {}
+  | LEX_SHL           /* Two args */     {}
+  | LEX_SHR           /* Two args */     {} 
   ;
 
 statement_extensions:
-    return_statement
-  | continue_statement
-  | break_statement
+    return_statement       {}
+  | continue_statement     {} 
+  | break_statement        {} 
   ;
 
-return_statement:
-    RETURN_
-  | RETURN_ expression
-  | EXIT
-  | FAIL
+return_statement: 
+    RETURN_                 {}
+  | RETURN_ expression      {} 
+  | EXIT                    {}
+  | FAIL                    {} 
   ;
 
 break_statement:
-    BREAK
+    BREAK         {}
   ;
 
 continue_statement:
-    CONTINUE
+    CONTINUE      {}
   ;
 
 variable_access_or_typename:
@@ -851,7 +866,7 @@ boolean_expression:
 expression:
     expression relational_operator simple_expression {$$ = make_bin_expr($2, $1, $3);}
   | expression LEX_IN simple_expression	{}
-  | simple_expression	{}
+  | simple_expression	
   ;
 
 simple_expression:
@@ -875,9 +890,9 @@ signed_primary:
 
 primary:
     factor
-  | primary LEX_POW factor
-  | primary LEX_POWER factor
-  | primary LEX_IS typename
+  | primary LEX_POW factor     {}
+  | primary LEX_POWER factor   {} 
+  | primary LEX_IS typename    {}
   ;
 
 signed_factor:
@@ -903,17 +918,17 @@ factor:
   ;
 
 address_operator:
-    '@'
+    '@' {}
   ;
 
 variable_or_function_access:
-    variable_or_function_access_no_standard_function 	{}
+    variable_or_function_access_no_standard_function 	
   | standard_functions 	{}
   ;
 
 variable_or_function_access_no_standard_function:
     identifier	{$$ = make_id_expr($1);}
-  | variable_or_function_access_no_id
+  | variable_or_function_access_no_id 
   ;
 
 variable_or_function_access_no_id:
@@ -923,7 +938,16 @@ variable_or_function_access_no_id:
   | '(' expression ')'                                 {$$ = $2;}
   | variable_or_function_access pointer_char            {$$ = make_un_expr(INDIR_OP, $1);}
   | variable_or_function_access '[' index_expression_list ']'   {}
-  | variable_or_function_access_no_standard_function '('      actual_parameter_list ')'  {}
+  | variable_or_function_access_no_standard_function '('      actual_parameter_list ')'  {
+                                  if (ty_query($1->type) == TYFUNC) 
+                                  {
+                                      $$ = make_fcall_expr($1, $3);
+                                  } 
+                                  else 
+                                  { 
+                                      error("Tried to pass a non-function in gram.y");
+                                  }
+                            }
   | p_NEW '(' variable_access_or_typename ')'	{$$ = make_un_expr(NEW_OP, $3);}
   ;
 
