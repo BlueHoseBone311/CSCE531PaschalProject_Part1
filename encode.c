@@ -526,9 +526,6 @@ void encode_binop(EXPR_BINOP b_op, EXPR expr)
   left_type_tag = ty_query(expr->u.binop.left->type);
   right_type_tag = ty_query(expr->u.binop.right->type);
 
-ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, REALDIV_OP, EQ_OP, LESS_OP, LE_OP,
-    GE_OP, GREATER_OP, ASSIGN_OP, NE_OP, BIN_SUCC_OP, BIN_PRED_OP;
-
   switch (b_op)
   {
 
