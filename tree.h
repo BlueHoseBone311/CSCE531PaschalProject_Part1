@@ -100,6 +100,19 @@ extern int func_top;
 extern int base_stack_offset[BS_DEPTH];
 extern int base_top;
 
+//Project III definitions
+typedef struct val_node {
+   long lo, hi;
+   TYPETAG type;
+   struct val_node *next;
+} VAL_LIST_REC, *VAL_LIST;
+
+typedef struct {
+   TYPETAG type;
+   char *label;
+   VAL_LIST values;
+} CASE_RECORD;
+
 //PROJECT I FUNCTIONS
 void create_typename(ST_ID id,TYPE new_type);
 /*
@@ -228,6 +241,38 @@ void expr_free(EXPR expr);
 
 //free expression list
 void expr_list_free(EXPR_LIST list);
+
+//Project III
+
+/* Creteas a new Array Access expr with the given array and indices
+	Also checks that the array is of array type
+	gets and converts the r-val of each index
+	checks that the index type is correct
+	checks that the number of indexs is correct
+*/
+EXPR make_array_access_expr(EXPR array, EXPR_LIST indices);
+
+//Returns a new VAL_LIST node for a single case constat
+VAL_LIST new_case_value(TYPETAG type, long lo, long hi);
+
+/*	checks each case constant on list to ensure its type matches and
+  	that the low value is less than or equal to the high value
+
+  */
+BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals);
+
+//De-allocates a list of case constants
+void case_value_list_free(VAL_LIST vals);
+
+/* 	Sets the output parameters to the value and type of the expr.
+	Expr must be INTCONST
+*/
+BOOLEAN get_case_value(EXPR expr, long *val, TYPETAG *type);
+
+/*	Checks to ensure var is an l-value and that types match that
+	of init and limit.
+*/
+BOOLEAN check_for_preamble(EXPR var, EXPR init, EXPR limit);
 
 #endif
 

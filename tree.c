@@ -583,7 +583,7 @@ EXPR make_id_expr(ST_ID id) {
          break;
 
       default: ("Hit default in make_id_expr");
-         
+
    }
    return ret;
 }// end make_id_expr
@@ -1503,9 +1503,6 @@ void expr_list_free (EXPR_LIST list) {
    free(list);
 }
 
-unsigned long get_value_range(TYPE type, long *low) {
-}
-
 
 void install_local_params(PARAM_LIST param)
 {
@@ -1539,4 +1536,141 @@ void install_local_params(PARAM_LIST param)
     param = param->next;
   }
 }
+
+EXPR make_array_access_expr(EXPR array, EXPR_LIST indices) {
+   //checks to make sure of type array
+   if (ty_query(array->type) != TYARRAY) {
+      error("Nonarray in array access expression");
+      return make_error_expr();
+   }
+
+   //variables for querying
+   TYPE array_type;
+   INDEX_LIST i;
+   EXPR_LIST test = indices;
+
+   array_type = ty_query_array(array->type, &i);
+
+   while (indices != NULL && i != NULL) {
+      //gets the r value, deref if l-val
+      if (is_lval(indices->expr) == TRUE) {
+         indices->expr = make_un_expr(DEREF_OP, indices->expr);
+      }
+
+      //checks type with "formal" type
+      if (ty_query(indices->expr->type) != TYSIGNEDLONGINT) {
+         error("Incompatible index type in array access");
+         return make_error_expr();
+      }
+
+      i = i->next;
+      indices = indices->next;
+   }
+
+   //checks that both indices are same length
+   if ((indices == NULL && i != NULL) || (indices != NULL && i == NULL)) {
+      error("indices not equal");
+      return make_error_expr();
+   }
+
+   //finally creates array_access node
+   EXPR ret;
+   ret = (EXPR)malloc(sizeof(EXPR_NODE));
+   assert(ret != NULL);
+   ret->tag = ARRAY_ACCESS;
+   ret->type = array_type;
+   ret->u.fcall_or_array_access.args_or_indices = test;
+   ret->u.fcall_or_array_access.function_or_array = array;
+
+   return ret;
+
+}// end make_array_access_expr
+
+VAL_LIST new_case_value(TYPETAG type, long lo, long hi) {
+   VAL_LIST ret;
+   ret = (VAL_LIST)malloc(sizeof(VAL_LIST_REC));
+   ret->lo = lo;
+   ret->hi = hi;
+   ret->type = type;
+   return ret;
+}// end new_case_value
+
+BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals) {
+   while (vals != NULL) {
+      //check type
+      if (vals->type != type) {
+         error("Case constant type does not match type of case expression");
+         return FALSE;
+      }
+      //check subrange values
+      if (vals->type == TYSUBRANGE) {
+         if (vals->lo > vals->hi) {
+            warning("Low value of subrange is greater than high value");
+            //return FALSE //only true if no errors, this is warning
+         }
+      }
+      //check for overlap
+   }
+   return TRUE;
+}// end check_case_values
+
+
+void case_value_list_free(VAL_LIST vals) {
+   if (vals->next != NULL) {
+      case_value_list_free(vals->next);
+   }
+   free(vals);
+}//end case_value_list_free
+
+BOOLEAN get_case_value(EXPR expr, long *val, TYPETAG *type) {
+   //check type
+   if (expr->tag == INTCONST) {
+      *type = ty_query(expr->type);
+      *val = expr->u.intval;
+      return TRUE;
+   }
+   else if (expr->tag == STRCONST) {
+      //try and convert
+      if (strlen(expr->u.strval) == 1) { //convert
+         *type = TYSIGNEDCHAR;
+         *val = expr->u.strval[0];
+         expr = make_intconst_expr(expr->u.strval[0], ty_build_basic(TYSIGNEDLONGINT));
+         return TRUE;
+      }
+      else { //error
+         error("STRCONST not length 1");
+         return FALSE;
+      }
+   }
+   else { //error
+      error("Case constant not of INTCONST type");
+   }
+}//end get_case_value
+
+BOOLEAN check_for_preamble(EXPR var, EXPR init, EXPR limit) {
+   TYPETAG var_type = ty_query(var->type);
+   //check lvalue
+   if (is_lval(var) == FALSE) {
+      error("Loop control variable not an l-value");
+      return FALSE;
+   }
+   //check if ordinal type
+   if (var_type != TYSIGNEDCHAR && var_type != TYUNSIGNEDCHAR && var_type != TYSIGNEDLONGINT) {
+      error("Loop control variable is not an ordinal type");
+      return FALSE;
+   }
+   //see if type matches, ignoring subranges for now
+   if (!ty_test_equality(var->type, init->type)) {
+      error("Types in loop do not match");
+      return FALSE;
+   }
+   else if (!ty_test_equality(var->type, limit->type)) {
+      error("Types in loop do not match");
+      return FALSE;
+   }
+
+   return TRUE;
+}//end check_for_preamble
+
+
 
