@@ -760,8 +760,8 @@ optional_semicolon_or_else_branch:
   ;
 
 case_element_list:
-    case_element                         {} 
-  | case_element_list semi case_element  {}
+    case_element                          
+  | case_element_list semi case_element  
   ;
 
 case_element:
@@ -769,14 +769,14 @@ case_element:
  ;
 
 case_default:
-    LEX_ELSE       {} 
-  | semi LEX_ELSE  {}
+    LEX_ELSE       
+  | semi LEX_ELSE  
   ;
 
 repetitive_statement:
     repeat_statement   {} 
   | while_statement    {} 
-  | for_statement      {}
+  | for_statement      {} 
   ;
 
 repeat_statement:
@@ -784,7 +784,8 @@ repeat_statement:
   ;
 
 while_statement:
-    LEX_WHILE boolean_expression LEX_DO { if (ty_query($2->type) == TYSIGNEDCHAR) {
+    LEX_WHILE boolean_expression LEX_DO { if (ty_query($2->type) == TYSIGNEDCHAR) 
+                                          {
                                              new_exit_label_push();
                                              char* start_while = new_symbol();
                                              b_label(start_while);
@@ -792,7 +793,8 @@ while_statement:
                                              $<y_string>$ = start_while;
                                              b_cond_jump(TYSIGNEDCHAR,B_ZERO,current_exit_label_peek());
                                           }
-                                          else {
+                                          else 
+                                          {
                                              error("Non-Boolean expression");
                                           }
                                         }
@@ -804,12 +806,13 @@ while_statement:
   ;
 
 for_statement:
-    LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO statement {}
+    LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO           
+    statement
   ;
 
 for_direction:
-    LEX_TO           {} 
-  | LEX_DOWNTO       {}
+    LEX_TO           
+  | LEX_DOWNTO       
   ;
 
 simple_statement:
@@ -919,12 +922,16 @@ rts_proc_parlist:
 statement_extensions:
     return_statement       {}
   | continue_statement     {} 
-  | break_statement   { if (check_exit_label_stack() == FALSE) { //loop does not exist
-                          error("Break statement not inside loop");                       }
-                       else { //exits closest surrounding loop
+  | break_statement   { if (check_exit_label_stack() == FALSE) //loop does not exist
+                        { 
+                          error("Break statement not inside loop");                       
+                        }
+                       else 
+                       { 
+                          //exits closest surrounding loop
                           b_jump(current_exit_label_peek());
                        }
-                     }     {} 
+                     }     
   ;
 
 return_statement: 
@@ -935,7 +942,7 @@ return_statement:
   ;
 
 break_statement:
-    BREAK         {}
+    BREAK         
   ;
 
 continue_statement:

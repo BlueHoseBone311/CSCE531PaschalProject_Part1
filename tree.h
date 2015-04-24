@@ -248,7 +248,7 @@ void expr_list_free(EXPR_LIST list);
 	Also checks that the array is of array type
 	gets and converts the r-val of each index
 	checks that the index type is correct
-	checks that the number of indexs is correct
+	checks that the number of indicies is correct
 */
 EXPR make_array_access_expr(EXPR array, EXPR_LIST indices);
 

@@ -792,7 +792,7 @@ EXPR perform_expr_op(EXPR expr){
 			    	expr=make_intconst_expr(int_val,ty_build_basic(TYSIGNEDLONGINT));
 				}//end else
 			}//end if
-		break;//end of math operations in swith statement
+		break;//end of math operations in switch statement
 		case EQ_OP:
 	    case LESS_OP:
 	    case LE_OP:

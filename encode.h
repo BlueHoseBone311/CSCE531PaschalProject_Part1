@@ -43,4 +43,6 @@ char *current_exit_label_peek();
 /*checks whether an exit label exists on the stack, returns TRUE if so*/
 BOOLEAN check_exit_label_stack();
 
+char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit);
+
 #endif
