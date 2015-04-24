@@ -70,6 +70,10 @@ int func_top = -1;
 int base_stack_offset[BS_DEPTH];
 int base_top = -1;
 
+/*Case Record Stack*/
+int case_record_stack[BS_DEPTH];
+int case_top = -1;
+
 /* Like YYERROR but do call yyerror */
 #define YYERROR1 { yyerror ("syntax error"); YYERROR; }
 %}
@@ -90,7 +94,7 @@ int base_top = -1;
     INDEX_LIST	  y_indexlist;
     PARAM_LIST    y_paramlist;  
     TYPE          y_type; 
-    EXPR	        y_expr;
+    EXPR	  y_expr;
     EXPR_LIST	  y_exprlist;
     EXPR_NULLOP   y_nullop;
     EXPR_UNOP     y_unop;
@@ -98,6 +102,8 @@ int base_top = -1;
     EXPR_ID       y_exprid;
     DIRECTIVE     y_dir;
     FUNCTION_HEAD y_funchead;
+    VAL_LIST	  y_valuelist;
+    CASE_RECORD	  y_caserec;
 
 }
 
@@ -183,7 +189,7 @@ int base_top = -1;
 %type <y_expr> boolean_expression index_expression_item
 %type <y_expr> simple_expression term signed_primary primary factor
 %type <y_expr> signed_factor variable_or_function_access predefined_literal
-	%type <y_expr> variable_or_function_access_no_standard_function  standard_functions
+%type <y_expr> variable_or_function_access_no_standard_function  standard_functions
 %type <y_expr> variable_or_function_access_no_id rest_of_statement
 %type <y_expr> assignment_or_call_statement standard_procedure_statement
 %type <y_expr> variable_access_or_typename optional_par_actual_parameter
@@ -203,6 +209,10 @@ int base_top = -1;
 %type <y_cint> repetitive_statement for_direction
 %type <y_dir> directive directive_list
 %type <y_funchead> function_heading
+/*Project III*/
+%type <y_string> simple_if if_statement case_statement conditional_statement
+%type <y_caserec> case_element_list case_element
+%type <y_valuelist> case_constant_list one_case_constant
 /* Precedence rules */
 
 /* The following precedence declarations are just to avoid the dangling
@@ -482,8 +492,8 @@ array_index_list:
 
 
 ordinal_index_type:
-    new_ordinal_type     
-  | typename
+    new_ordinal_type   {$$ = $1;}  
+  | typename	{$$ = $1;}
   ;
 
 
@@ -513,12 +523,12 @@ record_section:
   ;
 
 variant_part:
-    LEX_CASE variant_selector LEX_OF variant_list rest_of_variant
+    LEX_CASE variant_selector LEX_OF variant_list rest_of_variant {}
   ;
 
 rest_of_variant:
-    optional_semicolon
-  | case_default '(' record_field_list ')' optional_semicolon
+    optional_semicolon {}
+  | case_default '(' record_field_list ')' optional_semicolon {}
   ;
 
 variant_selector:
@@ -541,12 +551,19 @@ variant:
   ;
 
 case_constant_list:
-    one_case_constant
-  | case_constant_list ',' one_case_constant
+    one_case_constant {$$ = $1;}
+  | case_constant_list ',' one_case_constant {}
   ;
 
 one_case_constant:
-    static_expression
+    static_expression	{ TYPETAG type; long val;
+    				if (get_case_value($1, &val, &type) == TRUE) {
+    					$$ = new_case_value(type, val, val);
+    				}
+    				else {
+    					$$ = NULL;
+    				}
+    			}
   | static_expression LEX_RANGE static_expression
   ;
 
@@ -581,7 +598,7 @@ function_heading:
   ;
 
 directive_list:
-    directive                             
+    directive  {$$ = $1;}                            
   | directive_list semi directive    {}
   ;
 
@@ -608,8 +625,48 @@ formal_parameter_list:
   ;
 
 formal_parameter:
-    id_list ':' typename
-  | LEX_VAR id_list ':' typename
+    id_list ':' typename  {}
+  | LEX_VAR id_list ':' typename  {}
+  | function_heading {}
+  | id_list : conformant_array_schema {}
+  | LEX_VAR id_list ':' conformant_array_schema {}
+  ;
+
+parameter_form:
+    typename  {}
+  | open_array  {}
+  ;
+
+conformant_array_schema:
+    packed_conformant_array_schema  {}
+  | unpacked_conformant_array_schema  {}
+  ;
+
+typename_or_conformant_array_schema:
+    typename  {}
+  | packed_conformant_array_schema  {}
+  | unpacked_conformant_array_schema  {}
+  ;
+
+packed_conformant_array_schema:
+    LEX_PACKED LEX_ARRAY '[' index_type_specification ']' LEX_OF typename_or_conformant_array_schema  {}
+  ;
+
+unpacked_conformant_array_schema:
+    LEX_ARRAY '[' index_type_specification_list ']' LEX_OF typename_or_conformant_array_schema  {}
+  ;
+
+index_type_specification:
+    new_identifier LEX_RANGE new_identifier ':' typename  {}
+  ;
+
+index_type_specification_list:
+    index_type_specification  {}
+  | index_type_specification_list semi index_type_specification  {}
+  ;
+
+open_array:
+    LEX_ARRAY LEX_OF typename  {}
   ;
 
 
@@ -654,26 +711,51 @@ structured_variable:
   ;
 
 conditional_statement:
-    if_statement
-  | case_statement
+    if_statement {$$ = $1;}
+  | case_statement  {}
   ;
 
 simple_if:
-    LEX_IF boolean_expression LEX_THEN statement
+    LEX_IF boolean_expression { if (ty_query($2->type) == TYSIGNEDCHAR) {
+                                   encode_expr($2);
+                                   char* end_if = new_symbol();
+                                   b_cond_jump(TYSIGNEDCHAR,B_ZERO,end_if); //jump if false
+                                   $<y_string>$ = end_if; 
+                                 }
+                                 else {
+                                    error("Non-Boolean expression");
+                                 }
+                              }
+     LEX_THEN statement	{$$ = $<y_string>3;}     
   ;
 
 if_statement:
-    simple_if LEX_ELSE statement
-  | simple_if %prec prec_if
+    simple_if LEX_ELSE { char* end_else = new_symbol();
+                         b_jump(end_else);
+                         b_label($1);
+                         $<y_string>$ = end_else;
+                       }
+    statement		{b_label($<y_string>3);}
+  | simple_if %prec prec_if  {b_label($1);}
   ;
 
 case_statement:
-    LEX_CASE expression LEX_OF case_element_list optional_semicolon_or_else_branch LEX_END
+    LEX_CASE expression LEX_OF  {if(ty_query($2->type)== TYSIGNEDINT)
+    				  encode_expr($2);
+    				  case_record_stack[case_top]=$2;
+    				  case_top++;
+    				  new_exit_label();
+    				  new_case_value(TYSIGNEDINT, 0, 0);
+    				   
+
+    				  }
+    case_element_list  {}
+    optional_semicolon_or_else_branch LEX_END{}
   ;
 
 optional_semicolon_or_else_branch:
-    optional_semicolon
-  | case_default statement_sequence
+    optional_semicolon	{}
+  | case_default statement_sequence	{}
   ;
 
 case_element_list:
@@ -682,8 +764,8 @@ case_element_list:
   ;
 
 case_element:
-    case_constant_list ':' statement   {}
-  ;
+    case_constant_list { /*need to add label info*/ }    			
+ ;
 
 case_default:
     LEX_ELSE       {} 
@@ -701,7 +783,23 @@ repeat_statement:
   ;
 
 while_statement:
-    LEX_WHILE boolean_expression LEX_DO statement  {}
+    LEX_WHILE boolean_expression LEX_DO { if (ty_query($2->type) == TYSIGNEDCHAR) {
+                                             new_exit_label();
+                                             char* start_while = new_symbol();
+                                             b_label(start_while);
+                                             encode_expr($2);
+                                             $<y_string>$ = start_while;
+                                             b_cond_jump(TYSIGNEDCHAR,B_ZERO,current_exit_label());
+                                          }
+                                          else {
+                                             error("Non-Boolean expression");
+                                          }
+                                        }
+    statement                    { if (ty_query($2->type) == TYSIGNEDCHAR) {
+                                      b_jump($<y_string>4); //jumps to start of loop
+                                      b_label(old_exit_label());
+                                   }
+                                 }
   ;
 
 for_statement:
@@ -820,7 +918,12 @@ rts_proc_parlist:
 statement_extensions:
     return_statement       {}
   | continue_statement     {} 
-  | break_statement        {} 
+  | break_statement   { if (is_exit_label() == FALSE) { //loop does not exist
+                          error("Break statement not inside loop");                       }
+                       else { //exits closest surrounding loop
+                          b_jump(current_exit_label());
+                       }
+                     }     {} 
   ;
 
 return_statement: 
@@ -937,17 +1040,8 @@ variable_or_function_access_no_id:
   | variable_or_function_access '.' new_identifier     {} 
   | '(' expression ')'                                 {$$ = $2;}
   | variable_or_function_access pointer_char            {$$ = make_un_expr(INDIR_OP, $1);}
-  | variable_or_function_access '[' index_expression_list ']'   {}
-  | variable_or_function_access_no_standard_function '('      actual_parameter_list ')'  {
-                                  if (ty_query($1->type) == TYFUNC) 
-                                  {
-                                      $$ = make_fcall_expr($1, $3);
-                                  } 
-                                  else 
-                                  { 
-                                      error("Tried to pass a non-function in gram.y");
-                                  }
-                            }
+  | variable_or_function_access '[' index_expression_list ']'   {$$ = make_array_access_expr($1, $3);}
+  | variable_or_function_access_no_standard_function '('      actual_parameter_list ')'  {}
   | p_NEW '(' variable_access_or_typename ')'	{$$ = make_un_expr(NEW_OP, $3);}
   ;
 
