@@ -58,6 +58,7 @@
 
 #include "types.h"
 #include "tree.h"
+#include "encode.h"
 
 void set_yydebug(int);
 void yyerror(char *);
@@ -94,15 +95,15 @@ int case_top = -1;
     INDEX_LIST	  y_indexlist;
     PARAM_LIST    y_paramlist;  
     TYPE          y_type; 
-    EXPR	  y_expr;
-    EXPR_LIST	  y_exprlist;
+    EXPR	        y_expr;
+    EXPR_LIST	    y_exprlist;
     EXPR_NULLOP   y_nullop;
     EXPR_UNOP     y_unop;
     EXPR_BINOP    y_binop;
     EXPR_ID       y_exprid;
     DIRECTIVE     y_dir;
     FUNCTION_HEAD y_funchead;
-    VAL_LIST	  y_valuelist;
+    VAL_LIST	    y_valuelist;
     CASE_RECORD	  y_caserec;
 
 }
@@ -564,7 +565,7 @@ one_case_constant:
     					$$ = NULL;
     				}
     			}
-  | static_expression LEX_RANGE static_expression
+  | static_expression LEX_RANGE static_expression {}
   ;
 
 /* variable declaration part */
@@ -666,7 +667,7 @@ index_type_specification_list:
   ;
 
 open_array:
-    LEX_ARRAY LEX_OF typename  {}
+    LEX_ARRAY LEX_OF typename   {}
   ;
 
 
@@ -712,7 +713,7 @@ structured_variable:
 
 conditional_statement:
     if_statement {$$ = $1;}
-  | case_statement  {}
+  | case_statement  
   ;
 
 simple_if:
@@ -744,7 +745,7 @@ case_statement:
     				  encode_expr($2);
     				  case_record_stack[case_top]=$2;
     				  case_top++;
-    				  new_exit_label();
+    				  new_exit_label_push();
     				  new_case_value(TYSIGNEDINT, 0, 0);
     				   
 
@@ -784,12 +785,12 @@ repeat_statement:
 
 while_statement:
     LEX_WHILE boolean_expression LEX_DO { if (ty_query($2->type) == TYSIGNEDCHAR) {
-                                             new_exit_label();
+                                             new_exit_label_push();
                                              char* start_while = new_symbol();
                                              b_label(start_while);
                                              encode_expr($2);
                                              $<y_string>$ = start_while;
-                                             b_cond_jump(TYSIGNEDCHAR,B_ZERO,current_exit_label());
+                                             b_cond_jump(TYSIGNEDCHAR,B_ZERO,current_exit_label_peek());
                                           }
                                           else {
                                              error("Non-Boolean expression");
@@ -797,7 +798,7 @@ while_statement:
                                         }
     statement                    { if (ty_query($2->type) == TYSIGNEDCHAR) {
                                       b_jump($<y_string>4); //jumps to start of loop
-                                      b_label(old_exit_label());
+                                      b_label(old_exit_label_pop());
                                    }
                                  }
   ;
@@ -918,10 +919,10 @@ rts_proc_parlist:
 statement_extensions:
     return_statement       {}
   | continue_statement     {} 
-  | break_statement   { if (is_exit_label() == FALSE) { //loop does not exist
+  | break_statement   { if (check_exit_label_stack() == FALSE) { //loop does not exist
                           error("Break statement not inside loop");                       }
                        else { //exits closest surrounding loop
-                          b_jump(current_exit_label());
+                          b_jump(current_exit_label_peek());
                        }
                      }     {} 
   ;

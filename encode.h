@@ -30,4 +30,17 @@ void end_funct_body(char *global_funct_name, TYPE type);
 void encode_unop(EXPR_UNOP op, EXPR expr);
 void encode_binop(EXPR_BINOP b_op, EXPR expr);
 void encode_funct_call(EXPR funct, EXPR_LIST args);
+
+/*creates a new label and pushes it onto the exit label stack*/
+void new_exit_label_push();
+
+/*checks if the stack is empty, and then pops it off the stack and returns it*/
+char *old_exit_label_pop();
+
+/*Returns the label without popping off of the stack*/
+char *current_exit_label_peek();
+
+/*checks whether an exit label exists on the stack, returns TRUE if so*/
+BOOLEAN check_exit_label_stack();
+
 #endif

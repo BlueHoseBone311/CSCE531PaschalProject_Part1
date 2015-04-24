@@ -9,6 +9,9 @@
 #include <stdlib.h>
 #include "encode.h"
 
+/*label stack and head for Project III*/
+int exit_label_top = -1;
+char *exit_label_stack[100];
 
 static int calc_array_size(TYPE array_type, int align);
 static TYPE get_array_align_element(TYPE array);
@@ -669,3 +672,47 @@ void encode_funct_call(EXPR funct, EXPR_LIST args)
    b_funcall_by_name(funct_global_name,ty_query(funct_ret_type));
 }
 
+void new_exit_label_push()
+{
+	char *label = new_symbol();
+	//Increment the top of the stack
+	exit_label_top++;
+    //Add the label to the stack
+	exit_label_stack[exit_label_top] = label; 
+}
+
+char *old_exit_label_pop()
+{
+	if (exit_label_top < 0)
+	{
+		bug("Exit label stack empty");
+		return; 
+	}	
+	//Exit label 
+	char *label = exit_label_stack[exit_label_top];
+	exit_label_top--;
+	return label; 
+}
+
+char *current_exit_label_peek()
+{
+	char * label;
+
+	if (exit_label_top < 0)
+	{
+		bug("Exit label stack is empty");
+		return;
+	}	
+	label = exit_label_stack[exit_label_top];
+	return label; 
+}
+
+BOOLEAN check_exit_label_stack()
+{
+	if (exit_label_top < 0)
+	{
+		return FALSE;
+	}
+
+	return TRUE; 	
+}

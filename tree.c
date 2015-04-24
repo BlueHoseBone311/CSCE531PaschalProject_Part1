@@ -1375,7 +1375,7 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
    //case1, if rhs non null, then return binop node with assign_op
    if (rhs != NULL) {
       //exception if id is id of current function
-      if (id == func_stack_id[func_top] && func_top >= 0) {
+      if (func_top >= 0 && id == func_stack_id[func_top]) {
          if (ty_query(ty_query_func(lhs->type, &params, &check)) != TYVOID) {
             //return type is nonvoid
             EXPR ret = make_un_expr(SET_RETURN_OP, rhs);
