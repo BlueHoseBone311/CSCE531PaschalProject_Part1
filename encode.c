@@ -812,9 +812,9 @@ void encode_dispatch(VAL_LIST vals, char * label)
 		{
 			b_dispatch (tp_tag, B_EQ, exit);
 		}
-		else
+		else if (lo < hi)
 		{
-			new_exit_label();
+			new_exit_label_push();
 			char * l = exit_label_stack[exit_label_top];
 
 			b_dispatch (tp_tag, B_LT, l);
