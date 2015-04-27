@@ -75,6 +75,10 @@ int base_top = -1;
 int case_record_stack[BS_DEPTH];
 int case_top = -1;
 
+/*label stack and head for Project III*/
+int exit_label_top = -1;
+char *exit_label_stack[100];
+
 /* Like YYERROR but do call yyerror */
 #define YYERROR1 { yyerror ("syntax error"); YYERROR; }
 %}
@@ -95,15 +99,15 @@ int case_top = -1;
     INDEX_LIST	  y_indexlist;
     PARAM_LIST    y_paramlist;  
     TYPE          y_type; 
-    EXPR	        y_expr;
-    EXPR_LIST	    y_exprlist;
+    EXPR	  y_expr;
+    EXPR_LIST	  y_exprlist;
     EXPR_NULLOP   y_nullop;
     EXPR_UNOP     y_unop;
     EXPR_BINOP    y_binop;
     EXPR_ID       y_exprid;
     DIRECTIVE     y_dir;
     FUNCTION_HEAD y_funchead;
-    VAL_LIST	    y_valuelist;
+    VAL_LIST	  y_valuelist;
     CASE_RECORD	  y_caserec;
 
 }
@@ -169,7 +173,7 @@ int case_top = -1;
 %token p_DATE p_TIME LEX_RENAME LEX_IMPORT LEX_USES LEX_QUALIFIED LEX_ONLY
 
 /*Explicit Typing*/
-%type <y_cint> variable_declaration simple_decl 
+//%type <y_cint> variable_declaration simple_decl
 %type <y_int> LEX_INTCONST 
 %type <y_real> LEX_REALCONST 
 %type <y_string> LEX_STRCONST LEX_NIL string
@@ -206,7 +210,7 @@ int case_top = -1;
 %type <y_type> new_ordinal_type
 
 %type <y_cint> variable_declaration_part variable_declaration_list
-%type <y_cint>  any_decl any_declaration_part function_declaration
+%type <y_cint> variable_declaration simple_decl any_decl any_declaration_part function_declaration
 %type <y_cint> repetitive_statement for_direction
 %type <y_dir> directive directive_list
 %type <y_funchead> function_heading
@@ -262,7 +266,7 @@ identifier:
   ;
 
 new_identifier:
-    new_identifier_1
+    new_identifier_1 {$$ = $1;}
   ;
 
 new_identifier_1:
@@ -335,11 +339,28 @@ any_decl:
   ;
 
 simple_decl:
-    constant_definition_part    {}
+    label_declaration_part  {}
+  | constant_definition_part    {}
   | type_definition_part        {}
   | variable_declaration_part   
   ;
 
+/* Label declartion part */
+label_declaration_part:
+    LEX_LABEL label_list semi  {}
+  ;
+
+label_list:
+    label  {}
+  | label_list ',' label  {}
+  ;
+
+/* Labels are returned as identifier nodes for compatibility with gcc */
+label:
+    LEX_INTCONST  {}
+  | new_identifier  {}
+  ;
+  
 /* constant definition part */
 
 constant_definition_part:
@@ -409,10 +430,10 @@ type_definition:
 
 type_denoter:
     typename           
-  | new_ordinal_type	
-  | new_pointer_type	
-  | new_procedural_type	
-  | new_structured_type	
+  | new_ordinal_type  { $$ = $1;}
+  | new_pointer_type  { $$ = $1; }
+  | new_procedural_type  { $$ = $1; }
+  | new_structured_type  { $$ = $1; }
   ;
 
 new_ordinal_type:
@@ -475,7 +496,7 @@ procedural_type_formal_parameter:
   ;
 
 new_structured_type:
-    array_type
+    array_type	{$$ = $1;}
   | set_type       {}
   | record_type    {} 
   ;
@@ -577,12 +598,22 @@ variable_declaration_part:
   ;
 
 variable_declaration_list:
-    variable_declaration
+    variable_declaration	{$$ = $1;}
   | variable_declaration_list variable_declaration     {$$ = $1+$2;}
   ;
 
 variable_declaration:
-    id_list ':' type_denoter semi   {create_gdecl($1, $3); encode_declaration ($3, $1);}
+    //id_list ':' type_denoter semi   {create_gdecl($1, $3); encode_declaration ($3, $1);}
+    id_list ':' type_denoter semi  {
+          if (st_get_cur_block() < 1) {
+    	create_gdecl($1,$3);
+    	$$ = base_stack_offset[base_top];
+          } else {
+    	$$ = process_var_decl($1, $3, base_stack_offset[base_top]);
+          }
+          resolve_all_ptr();
+        }
+  ;
   ;
 
 function_declaration:
@@ -626,8 +657,8 @@ formal_parameter_list:
   ;
 
 formal_parameter:
-    id_list ':' typename  {}
-  | LEX_VAR id_list ':' typename  {}
+    id_list ':' parameter_form {}
+  | LEX_VAR id_list ':' parameter_form  {}
   | function_heading {}
   | id_list : conformant_array_schema {}
   | LEX_VAR id_list ':' conformant_array_schema {}
@@ -687,8 +718,13 @@ statement_sequence:
   ;
 
 statement:
-    structured_statement
-  | simple_statement
+   label ':' unlabelled_statement  {} /* ignore */
+   | unlabelled_statement  {}
+  ;
+  
+  unlabelled_statement:
+      structured_statement  {}
+    | simple_statement  {}
   ;
 
 structured_statement:
@@ -765,7 +801,9 @@ case_element_list:
   ;
 
 case_element:
-    case_constant_list { /*need to add label info*/ }    			
+    case_constant_list { new_exit_label_push();	
+    			encode_dispatch(new_case_value($1->type,0,0) , exit_label_stack[exit_label_top]);} 
+    
  ;
 
 case_default:
@@ -806,13 +844,13 @@ while_statement:
   ;
 
 for_statement:
-    LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO           
+    LEX_FOR variable_or_function_access LEX_ASSIGN expression for_direction expression LEX_DO    {}       
     statement
   ;
 
 for_direction:
-    LEX_TO           
-  | LEX_DOWNTO       
+    LEX_TO         {}  
+  | LEX_DOWNTO     {}  
   ;
 
 simple_statement:
@@ -1098,7 +1136,7 @@ rts_fun_onepar:
   | p_ROUND        {} 
   | p_CARD         {}
   | p_ORD          {$$ = ORD_OP;} 
-  | p_CHR          {}
+  | p_CHR          {$$ = CHR_OP;}
   | p_ODD          {} 
   | p_EMPTY        {$$ = EMPTY_OP;}
   | p_POSITION     {} 

@@ -16,6 +16,9 @@
 
 /*Primary method to set alignment for various types*/
 
+extern int exit_label_top;
+extern char *exit_label_stack[100];
+
 void encode_declaration (TYPE type, VAR_ID_LIST varlist_id);
 
 /*Provides the size of the base element given the type*/
@@ -26,7 +29,7 @@ int get_local_var_offset();
 void decl_encode(TYPE type, VAR_ID_LIST list_id);
 int get_formal_param_offset(TYPETAG tag);
 void begin_funct_body(char *global_funct_name, TYPE type, int local_var_offset);
-void end_funct_body(char *global_funct_name, TYPE type); 
+void end_funct_body(char *global_funct_name, TYPE type);
 void encode_unop(EXPR_UNOP op, EXPR expr);
 void encode_binop(EXPR_BINOP b_op, EXPR expr);
 void encode_funct_call(EXPR funct, EXPR_LIST args);

@@ -10,8 +10,8 @@
 #include "encode.h"
 
 /*label stack and head for Project III*/
-int exit_label_top = -1;
-char *exit_label_stack[100];
+//int exit_label_top = -1;
+//char* exit_label_stack[100];
 
 static int calc_array_size(TYPE array_type, int align);
 static TYPE get_array_align_element(TYPE array);
@@ -678,7 +678,7 @@ void new_exit_label_push()
 	//Increment the top of the stack
 	exit_label_top++;
     //Add the label to the stack
-	exit_label_stack[exit_label_top] = label; 
+	exit_label_stack[exit_label_top] = label;
 }
 
 char *old_exit_label_pop()
@@ -686,12 +686,12 @@ char *old_exit_label_pop()
 	if (exit_label_top < 0)
 	{
 		bug("Exit label stack empty");
-		return; 
-	}	
-	//Exit label 
+		return;
+	}
+	//Exit label
 	char *label = exit_label_stack[exit_label_top];
 	exit_label_top--;
-	return label; 
+	return label;
 }
 
 char *current_exit_label_peek()
@@ -702,9 +702,9 @@ char *current_exit_label_peek()
 	{
 		bug("Exit label stack is empty");
 		return;
-	}	
+	}
 	label = exit_label_stack[exit_label_top];
-	return label; 
+	return label;
 }
 
 BOOLEAN check_exit_label_stack()
@@ -714,7 +714,7 @@ BOOLEAN check_exit_label_stack()
 		return FALSE;
 	}
 
-	return TRUE; 	
+	return TRUE;
 }
 
 char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit)
@@ -747,9 +747,9 @@ char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit)
 		return NULL;
 	}
 	else
-	{	
+	{
 		b_assign (limit_type);
-	}	
+	}
 	//Emits a new "return" label
 	new_exit_label_push();
 	label = exit_label_stack[exit_label_top];
@@ -765,7 +765,7 @@ char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit)
 	//Emits code to compare the duplicate limit value with the top stack value
 
 	if(dir == 0)
-	{ 
+	{
 		b_arith_rel_op (B_LT, limit_type);
 	}
 	else
@@ -777,17 +777,17 @@ char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit)
 	b_duplicate(var_type);
 
 	if(dir == 0)
-	{	
+	{
 		b_inc_dec (var_type, B_PRE_INC, 0);
 	}
 	else
-	{	
+	{
 		b_inc_dec (var_type, B_PRE_DEC, 0);
-	}	
+	}
 
 	return var->u.strval;
 }
-#if 0
+
 void encode_dispatch(VAL_LIST vals, char * label)
 {
 
@@ -805,29 +805,28 @@ void encode_dispatch(VAL_LIST vals, char * label)
 	if(tp_tag != TYSIGNEDINT || tp_tag != TYUNSIGNEDINT || tp_tag != TYSIGNEDLONGINT || tp_tag!= TYUNSIGNEDLONGINT)
 	{
 		error("Wrong type comparison");
-	}	
-	else 
+	}
+	else
 	{
-		if(lo==high)
+		if(lo==hi)
 		{
-			b_dispatch (tp_tag, B_EQ, exit);
+			b_dispatch (B_EQ, tp_tag, lo, exit, TRUE);
 		}
 		else if (lo < hi)
 		{
 			new_exit_label_push();
 			char * l = exit_label_stack[exit_label_top];
 
-			b_dispatch (tp_tag, B_LT, l);
+			b_dispatch (B_LT, tp_tag, lo, l, TRUE);
 
-			if(b_cond_jump (tp_tag, B_NONZERO, l));
-			{	
-				b_dispatch (tp_tag, B_GT, exit);
-			}
-					
+			//if(b_cond_jump (tp_tag, B_NONZERO, l))
+			//{
+				b_dispatch (B_GT, tp_tag, hi, exit, TRUE);
+			//}
+
 			b_label(l);
 
 		}
 			b_label(exit);
 	}
-}
-#endif
+}//end encode_dispatch
