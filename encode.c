@@ -1,17 +1,14 @@
  /*@Title   encode.c - size calculations and code generating functtions
  * @authors  Venugopal Boppa, Christopher A. Greer, Christian Merchant
  * @class   CSCE531
- * @Project Pascal Compiler Part II
- * @date    04-17-15
+ * @Project Pascal Compiler Part III
+ * @date    04-27-15
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "encode.h"
 
-/*label stack and head for Project III*/
-int exit_label_top = -1;
-char *exit_label_stack[100];
 
 static int calc_array_size(TYPE array_type, int align);
 static TYPE get_array_align_element(TYPE array);
@@ -422,7 +419,7 @@ void encode_expr(EXPR expr)
 	case ARRAY_ACCESS: break;
 	case LFUN: break;
     case ERROR: break;
-    default: bug("Hit default in encode_expr with typetag (%d)", expr->tag);
+    default: bug("Error: Hit default in encode_expr");
 
   }//End Switch
 }//End encode_expr
@@ -515,7 +512,7 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
 						b_convert(tag, rval_tag);
 					}
 					break;
-    //default: bug("Hit default in encode_unop with unop tag (%d)",op);
+    default: bug("Error: Hit default in encode_unop");
   }
 }
 
@@ -528,6 +525,9 @@ void encode_binop(EXPR_BINOP b_op, EXPR expr)
   type_tag = ty_query(expr->type);
   left_type_tag = ty_query(expr->u.binop.left->type);
   right_type_tag = ty_query(expr->u.binop.right->type);
+
+ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, REALDIV_OP, EQ_OP, LESS_OP, LE_OP,
+    GE_OP, GREATER_OP, ASSIGN_OP, NE_OP, BIN_SUCC_OP, BIN_PRED_OP;
 
   switch (b_op)
   {
@@ -556,7 +556,7 @@ void encode_binop(EXPR_BINOP b_op, EXPR expr)
     		        b_assign(left_type_tag);
      			    b_pop();
    		            break;
-   	default: bug("Hit default in encode_binop with binop tag (%d)",b_op);
+   	default: bug("Error: Hit default in encode_binop");
   }
 }
 
@@ -672,164 +672,3 @@ void encode_funct_call(EXPR funct, EXPR_LIST args)
    b_funcall_by_name(funct_global_name,ty_query(funct_ret_type));
 }
 
-void new_exit_label_push()
-{
-	char *label = new_symbol();
-	//Increment the top of the stack
-	exit_label_top++;
-    //Add the label to the stack
-	exit_label_stack[exit_label_top] = label; 
-}
-
-char *old_exit_label_pop()
-{
-	if (exit_label_top < 0)
-	{
-		bug("Exit label stack empty");
-		return; 
-	}	
-	//Exit label 
-	char *label = exit_label_stack[exit_label_top];
-	exit_label_top--;
-	return label; 
-}
-
-char *current_exit_label_peek()
-{
-	char * label;
-
-	if (exit_label_top < 0)
-	{
-		bug("Exit label stack is empty");
-		return;
-	}	
-	label = exit_label_stack[exit_label_top];
-	return label; 
-}
-
-BOOLEAN check_exit_label_stack()
-{
-	if (exit_label_top < 0)
-	{
-		return FALSE;
-	}
-
-	return TRUE; 	
-}
-
-char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit)
-{
-	TYPETAG var_type = ty_query(var->type);
-	TYPETAG limit_type = ty_query(limit->type);
-	TYPETAG init_type = ty_query(init->type);
-	char * label;
-	/*Encodes the limit expression*/
-    if(limit_type != TYSIGNEDLONGINT)
-    {
-		b_convert (limit_type, TYSIGNEDLONGINT);
-	}//end if
-
-	/*Emits code to duplicate this value*/
-	if(limit_type != TYSIGNEDLONGINT)
-	{
-		error("conversion failed");
-		return NULL;
-	}
-	else
-	{
-		b_duplicate (limit_type);
-	}
-	/*Encodes what amounts to an assignment of the initial value to the
-      loop control variable*/
-	if(var_type != TYSIGNEDCHAR && var_type != TYUNSIGNEDCHAR && var_type != TYSIGNEDLONGINT)
-	{
-		error("Loop control is not an ordinal");
-		return NULL;
-	}
-	else
-	{	
-		b_assign (limit_type);
-	}	
-	//Emits a new "return" label
-	new_exit_label_push();
-	label = exit_label_stack[exit_label_top];
-	b_label(label);
-
-	/*Emits code to convert the initial value (on top of the control stack) to
-      TYSIGNEDLONGING (b_convert()) if it isn't already.*/
-	if(init_type != TYSIGNEDLONGINT)
-	{
-		b_convert (limit_type, TYSIGNEDLONGINT);
-	}
-
-	//Emits code to compare the duplicate limit value with the top stack value
-
-	if(dir == 0)
-	{ 
-		b_arith_rel_op (B_LT, limit_type);
-	}
-	else
-	{
-		b_arith_rel_op (B_GT, limit_type);
-	}
-	//Emits a conditional jump on true
-	b_cond_jump (limit_type, B_NONZERO, label);
-	b_duplicate(var_type);
-
-	if(dir == 0)
-	{	
-		b_inc_dec (var_type, B_PRE_INC, 0);
-	}
-	else
-	{	
-		b_inc_dec (var_type, B_PRE_DEC, 0);
-	}	
-
-	return var->u.strval;
-}
-
-void encode_dispatch(VAL_LIST vals, char * label)
-{
-	VAL_LIST val_node; 
-	val_node = vals; 
-	char * exit_match;
-	exit_match = exit_label_stack[exit_label_top];
-
-	while (val_node != NULL)
-	{
-		TYPETAG tp_tag;
-		long lo, hi;
-
-		tp_tag = val_node->type;
-		lo = val_node->lo;
-		hi = val_node->hi;
-
-		
-
-		//ensure the correct type
-		if(tp_tag != TYSIGNEDINT || tp_tag != TYUNSIGNEDINT || tp_tag != TYSIGNEDLONGINT || tp_tag!= TYUNSIGNEDLONGINT)
-		{
-			error("Wrong type comparison");
-		}	
-		else 
-		{
-			/*low is equal to high: */
-			if(lo==hi)
-			{
-				b_dispatch (B_EQ, tp_tag, lo, exit_match, TRUE);
-			}
-			else 
-			{
-				new_exit_label_push();
-				char * l = exit_label_stack[exit_label_top];
-
-				b_dispatch (B_LT, tp_tag, lo, l, TRUE);
-				b_dispatch (B_LE, tp_tag, hi, exit_match, TRUE);
-				b_label(l);		
-			}	
-		}
-		val_node = val_node->next;
-	}
-	b_label(exit_match);
-	b_jump(exit_match);	
-}

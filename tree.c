@@ -1,8 +1,8 @@
 /*@Title   tree.c - Routines used by Bison for decl creation, and type building
  * @authors  Venugopal Boppa, Christopher A. Greer, Christian Merchant
  * @class   CSCE531
- * @Project Pascal Compiler Part II
- * @date    04-17-15
+ * @Project Pascal Compiler Part III
+ * @date    04-27-15
 */
 
 
@@ -363,19 +363,6 @@ TYPE check_subrange(long low, long high)
 
 
 //Project II functions
-BOOLEAN isTagNumerical(TYPETAG t)
-{
-  switch (t)
-  {
-    case TYSIGNEDLONGINT:
-    case TYFLOAT:
-    case TYDOUBLE:
-      return TRUE;
-  }
-
-  return FALSE;
-}
-
 EXPR make_convert_expr(EXPR sub_expr, TYPE type)
 {
   EXPR expr;
@@ -408,9 +395,9 @@ EXPR check_assign(EXPR assign)
     if (right_tag == TYFLOAT || right_tag == TYSIGNEDLONGINT) {
 
       if (assign->u.binop.right->tag == INTCONST) {
-		assign->u.binop.right = make_realconst_expr(assign->u.binop.right->u.intval);
+	assign->u.binop.right = make_realconst_expr(assign->u.binop.right->u.intval);
       } else {
-		assign->u.binop.right = make_convert_expr(assign->u.binop.right, ty_build_basic(TYDOUBLE));
+	assign->u.binop.right = make_convert_expr(assign->u.binop.right, ty_build_basic(TYDOUBLE));
       }
     }
 
@@ -439,10 +426,9 @@ EXPR check_assign(EXPR assign)
     return assign;
   }
 
-  if (left_tag == TYARRAY || right_tag == TYARRAY)  {
+  if (left_tag == TYUNSIGNEDCHAR && right_tag == TYSIGNEDLONGINT) {
      return assign;
   }
-
   error("Illegal conversion");
   return make_error_expr();
 }
@@ -462,7 +448,18 @@ BOOLEAN isTagCharNum(TYPETAG t)
   return FALSE;
 }
 
+BOOLEAN isTagNumerical(TYPETAG t)
+{
+  switch (t)
+  {
+    case TYSIGNEDLONGINT:
+    case TYFLOAT:
+    case TYDOUBLE:
+      return TRUE;
+  }
 
+  return FALSE;
+}
 
 
 EXPR castIntExpr(EXPR expr)
@@ -486,7 +483,7 @@ EXPR make_intconst_expr(long val, TYPE type) {
    ret = (EXPR)malloc(sizeof(EXPR_NODE));
    assert(ret != NULL);
    ret->tag = INTCONST;
-   ret->type = type;
+   ret->type = ty_build_basic(TYSIGNEDLONGINT);
    ret->u.intval = val;
 
    if (ty_query(type) != TYSIGNEDLONGINT) {
@@ -530,6 +527,168 @@ EXPR make_null_expr(EXPR_NULLOP op) {
    }
    return ret;
 }//end make_null_expr
+
+EXPR make_error_expr() {
+   EXPR ret;
+   ret = (EXPR)malloc(sizeof(EXPR_NODE));
+   assert(ret != NULL);
+   ret->tag = ERROR;
+   ret->type = ty_build_basic(TYERROR);
+   return ret;
+}//make_error_expr
+
+EXPR make_id_expr(ST_ID id) {
+   ST_DR data_rec;
+   int block;
+   EXPR ret;
+   ret = (EXPR)malloc(sizeof(EXPR_NODE));
+   assert(ret != NULL);
+
+   //look up information for id, error if not found or TYPENAME
+   data_rec = st_lookup(id, &block);
+   if (data_rec == NULL) {
+      error("Undeclared identifier \"%s\" in expression", st_get_id_str(id));
+      return make_error_expr();
+   }
+
+   if (data_rec->tag == TYPENAME) {
+      error("Identifier \"%s\" installed as TYPENAME", st_get_id_str(id));
+      return make_error_expr();
+   }
+
+   //switch statement to fill rest of fields for ret
+   ret->type = data_rec->u.decl.type;
+   switch(data_rec->tag) {
+      case GDECL:
+         ret->tag = GID;
+         ret->u.gid = id;
+         break;
+      case LDECL:
+      case PDECL:
+         ret->tag = LVAR;
+         ret->u.lvar.is_ref = data_rec->u.decl.is_ref;
+         ret->u.lvar.link_count = st_get_cur_block() - block;
+         ret->u.lvar.offset = data_rec->u.decl.v.offset;
+         break;
+      case FDECL:
+         if (block <= 1) {
+            ret->tag = GID;
+            ret->u.gid = id;
+         }
+         else {
+            ret->tag = LFUN;
+            ret->u.lfun.global_name = data_rec->u.decl.v.global_func_name;
+            ret->u.lfun.link_count = st_get_cur_block() - block;
+         }
+         break;
+
+      default: ("Hit default in make_id_expr");
+         
+   }
+   return ret;
+}// end make_id_expr
+
+EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
+   /*new node variables & initial assignments*/
+   EXPR ret;
+   ret = (EXPR)malloc(sizeof(EXPR_NODE));
+   assert(ret != NULL);
+   ret->tag = UNOP;
+   ret->type = sub->type;
+   ret->u.unop.op = op;
+   ret->u.unop.operand = sub;
+   /*querying variables*/
+   TYPETAG sub_tag = ty_query(sub->type);
+   ST_ID id;
+   TYPE base_type,next;
+   long low, high;
+
+
+   if (op == DEREF_OP) {
+      return ret;
+   }
+
+
+   sub_tag = ty_query(sub->type);
+   //subexpression is unary-converted
+   if (is_lval(sub) == FALSE) {
+      if (sub_tag == TYFLOAT) {
+         EXPR convertedNode = make_un_expr(CONVERT_OP, sub);
+         convertedNode->type = ty_build_basic(TYDOUBLE);
+         ret->u.unop.operand = convertedNode;
+      }
+      else if (sub_tag == TYSUBRANGE) {
+         EXPR convertedNode = make_un_expr(CONVERT_OP, sub);
+         base_type = ty_query_subrange(sub->type, &low, &high);
+         convertedNode->type = base_type;
+         ret->u.unop.operand = convertedNode;
+      }
+   }
+
+   sub_tag = ty_query(sub->type);
+   //switch statement on op for error checking
+   switch (op) {
+      case CONVERT_OP:
+         break;
+      case DEREF_OP:
+         break;
+      case NEG_OP:
+         //must be of type TYSIGNEDLONGINT, TYDOUBLE
+         if (sub_tag != TYSIGNEDLONGINT &&  sub_tag != TYDOUBLE) {
+            error("Incorrect type in NEG_OP");
+            return make_error_expr();
+         }
+            sub->u.intval = sub->u.intval * -1;
+            ret->type = ty_build_basic(TYSIGNEDLONGINT);
+         break;
+      case ORD_OP:
+         //must be CHAR
+         if (sub_tag != TYUNSIGNEDCHAR && sub_tag != TYSIGNEDCHAR) {
+           /* error("Incorrect type in ORD_OP");
+            return make_error_expr();*/
+         }
+
+         //since it returns int...I think the type needs to be changed
+         ret->type = ty_build_basic(TYSIGNEDLONGINT);
+         break;
+      case CHR_OP:
+         //converts byte value to char value...check type
+         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE ) {
+            error("Incorrect type in CHR_OP");
+            return make_error_expr();
+         }
+
+         //returns char so updated type
+         ret->type = ty_build_basic(TYUNSIGNEDCHAR);
+         break;
+      case UN_SUCC_OP:
+         //check type, must be ordinal type
+         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE && sub_tag != TYUNSIGNEDCHAR) {
+            error("Incorrect type in UN_SUCC_OP");
+            return make_error_expr();
+         }
+         break;
+      case UN_PRED_OP:
+         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE && sub_tag != TYUNSIGNEDCHAR) {
+            error("Incorrect type in UN_PRED_OP");
+            return make_error_expr();
+         }
+         break;
+      case UPLUS_OP:
+         //check type
+         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE) {
+            error("Incorrect type in UPLUS_OP");
+            return make_error_expr();
+         }
+         break;
+      case INDIR_OP:
+         //returns a pointer, not sure if any other errors/checks
+         ret->type = ty_query_ptr(sub->type, &id);
+      default:
+         break;
+   }
+   return ret;
+}//make_un_expr
 EXPR perform_expr_op(EXPR expr){
 
 	EXPR_BINOP op;
@@ -566,43 +725,41 @@ EXPR perform_expr_op(EXPR expr){
 	  		      	//determine if right value is real or int and perform necessary operation
 	  		      	if(expr->u.binop.right->tag == REALCONST)
 	  		      	{
-						 if(op==ADD_OP)
-							{
-							   real_val += expr->u.binop.right->u.realval;
-							 }
-						 else if(op==SUB_OP)
-						     {
-							 real_val -= expr->u.binop.right->u.realval;
-							  }
-						 else if(op==MUL_OP)
-						      {
-							  real_val *= expr->u.binop.right->u.realval;
-							   }
-						  else if(op==DIV_OP)
-						      {
-							   real_val /= expr->u.binop.right->u.realval;
-                       	       }
+						switch(op)
+						{
+							case ADD_OP:
+								real_val += expr->u.binop.right->u.realval;
+								break;
+							case SUB_OP:
+								real_val -= expr->u.binop.right->u.realval;
+								break;
+							case MUL_OP:
+								real_val *= expr->u.binop.right->u.realval;
+								break;
+							case DIV_OP:
+								real_val /= expr->u.binop.right->u.realval;
+								break;
+						}//end real operations rigth side real
 
 					}//end if
 					else
 					{
-						if (op==ADD_OP)
-						   {
-							       real_val += expr->u.binop.right->u.intval;
-						   }
-					    else if(op==SUB_OP)
-							{
-						         real_val -= expr->u.binop.right->u.intval;
-						     }
-						else if(op==MUL_OP)
-						     {
-						         real_val *= expr->u.binop.right->u.intval;
-						      }
-						else if(op==DIV_OP)
-						      {
-						            real_val /= expr->u.binop.right->u.intval;
-						      }
-	                }
+						switch(op)
+						{
+							case ADD_OP:
+								real_val += expr->u.binop.right->u.intval;
+								break;
+							case SUB_OP:
+								real_val -= expr->u.binop.right->u.intval;
+								break;
+							case MUL_OP:
+								real_val *= expr->u.binop.right->u.intval;
+								break;
+							case DIV_OP:
+								real_val /= expr->u.binop.right->u.intval;
+								break;
+						}//end real operations right side int
+					}//end else
 
 				 expr = make_realconst_expr(real_val);
 			 	}//end if to determine if real operations
@@ -611,36 +768,31 @@ EXPR perform_expr_op(EXPR expr){
 			 	{
 				    int_val=expr->u.binop.left->u.intval;
 
-					  if(op==ADD_OP)
-						   {
-						  	  int_val += expr->u.binop.right->u.intval;
-
-						  }
-					 else if(op==SUB_OP)
-					      {
-							 int_val-=expr->u.binop.right->u.intval;
-						  }
-					  else if(op==MUL_OP)
-					      {
-					        int_val *= expr->u.binop.right->u.intval;
-						  }
-					  else if(op==DIV_OP)
-					      {
-						    int_val/=expr->u.binop.right->u.intval;
-						  }
-					  else if (op == MOD_OP)
-					      {
-							 int_val%=expr->u.binop.left->u.intval;
-						  }
-					  else if(op==REALDIV_OP)
-					       {
-						    int_val/=expr->u.binop.left->u.intval;
-		 				 }
+					 switch(op)
+					 {
+						case ADD_OP:
+							int_val += expr->u.binop.right->u.intval;
+							break;
+	    				case SUB_OP:
+	    					int_val -= expr->u.binop.right->u.intval;
+	    					break;
+	    				case MUL_OP:
+	    					int_val *= expr->u.binop.right->u.intval;
+	    					break;
+						case DIV_OP:
+							int_val /= expr->u.binop.right->u.intval;
+							break;
+	    				case MOD_OP:
+	    					int_val %= expr->u.binop.right->u.intval;
+	    					break;
+    					case REALDIV_OP:
+    						int_val += expr->u.binop.right->u.intval;
+					}//end int operations
 
 			    	expr=make_intconst_expr(int_val,ty_build_basic(TYSIGNEDLONGINT));
 				}//end else
 			}//end if
-		break;//end of math operations in switch statement
+		break;//end of math operations in swith statement
 		case EQ_OP:
 	    case LESS_OP:
 	    case LE_OP:
@@ -712,320 +864,6 @@ EXPR perform_expr_op(EXPR expr){
 	return expr;
 
 }//end perform_expr_op
-
-EXPR make_error_expr() {
-   EXPR ret;
-   ret = (EXPR)malloc(sizeof(EXPR_NODE));
-   assert(ret != NULL);
-   ret->tag = ERROR;
-   ret->type = ty_build_basic(TYERROR);
-   return ret;
-}//make_error_expr
-
-BOOLEAN is_lval(EXPR expr) {
-   //first check tag of expr
-   if (expr->tag == LVAR || expr->tag == ARRAY_ACCESS) { //all LVARs are l-val
-      return TRUE;
-   }
-   else if (expr->tag == GID) {
-      if (ty_query(expr->type) == TYFUNC || ty_query(expr->type) == TYERROR) { //l-val only if data type
-         return FALSE;
-      }
-      else {
-         return TRUE;
-      }
-   }
-   else if (expr->tag == UNOP) {
-      if (expr->u.unop.op == INDIR_OP) { //l-val if indirection op
-         return TRUE;
-      }
-      else {
-         return FALSE;
-      }
-   }
-   else {
-      return FALSE;
-   }
-}//end is_lval
-
-EXPR make_id_expr(ST_ID id) {
-   ST_DR data_rec;
-   int block;
-   EXPR ret;
-   ret = (EXPR)malloc(sizeof(EXPR_NODE));
-   assert(ret != NULL);
-
-   //look up information for id, error if not found or TYPENAME
-   data_rec = st_lookup(id, &block);
-   if (data_rec == NULL) {
-      error("Undeclared identifier \"%s\" in expression", st_get_id_str(id));
-      return make_error_expr();
-   }
-
-   if (data_rec->tag == TYPENAME) {
-      error("Identifier \"%s\" installed as TYPENAME", st_get_id_str(id));
-      return make_error_expr();
-   }
-
-   //switch statement to fill rest of fields for ret
-   ret->type = data_rec->u.decl.type;
-   switch(data_rec->tag) {
-      case GDECL:
-         ret->tag = GID;
-         ret->u.gid = id;
-         break;
-      case LDECL:
-      case PDECL:
-         ret->tag = LVAR;
-         ret->u.lvar.is_ref = data_rec->u.decl.is_ref;
-         ret->u.lvar.link_count = st_get_cur_block() - block;
-         ret->u.lvar.offset = data_rec->u.decl.v.offset;
-         break;
-      case FDECL:
-         if (block <= 1) {
-            ret->tag = GID;
-            ret->u.gid = id;
-         }
-         else {
-            ret->tag = LFUN;
-            ret->u.lfun.global_name = data_rec->u.decl.v.global_func_name;
-            ret->u.lfun.link_count = st_get_cur_block() - block;
-         }
-         break;
-
-      default: ("Hit default in make_id_expr");
-
-   }
-   return ret;
-}// end make_id_expr
-/*
-EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
-   /*new node variables & initial assignments
-   EXPR ret;
-   ret = (EXPR)malloc(sizeof(EXPR_NODE));
-   assert(ret != NULL);
-   ret->tag = UNOP;
-   ret->type = sub->type;
-   ret->u.unop.op = op;
-   ret->u.unop.operand = sub;
-   /*querying variables
-   TYPETAG sub_tag = ty_query(sub->type);
-   ST_ID id;
-   TYPE base_type,next;
-   long low, high;
-
-
-   if (op == DEREF_OP) {
-      return ret;
-   }
-
-  //if op expects an r-value and sub is an l-value, add a DEREF node
-  if (op == ADDRESS_OP || op == NEW_OP) { //expect l-values
-      if (is_lval(sub) == FALSE) {
-          return make_error_expr();
-       }
-  }
-  else { //expect r-values
-      if (is_lval(sub) == TRUE) {
-          ret->u.unop.operand = make_un_expr(DEREF_OP,sub);
-      }
-   }
-
-
-   sub_tag = ty_query(sub->type);
-   //subexpression is unary-converted
-   if (is_lval(sub) == FALSE) {
-      if (sub_tag == TYFLOAT) {
-		   printf("in TYFLOAT");
-         EXPR convertedNode = make_un_expr(CONVERT_OP, sub);
-         convertedNode->type = ty_build_basic(TYDOUBLE);
-         ret->u.unop.operand = convertedNode;
-      }
-      else if (sub_tag == TYSUBRANGE) {
-         EXPR convertedNode = make_un_expr(CONVERT_OP, sub);
-         base_type = ty_query_subrange(sub->type, &low, &high);
-         convertedNode->type = base_type;
-         ret->u.unop.operand = convertedNode;
-      }
-   }
-
-   sub_tag = ty_query(sub->type);
-   //switch statement on op for error checking
-   switch (op) {
-      case CONVERT_OP:
-         break;
-      case DEREF_OP:
-         break;
-      case NEG_OP:
-         //must be of type TYSIGNEDLONGINT, TYDOUBLE
-         if (sub_tag != TYSIGNEDLONGINT &&  sub_tag != TYDOUBLE) {
-            error("Incorrect type in NEG_OP");
-            return make_error_expr();
-         }
-            //sub->u.intval = sub->u.intval * -1;
-            //ret->type = ty_build_basic(TYSIGNEDLONGINT);
-         break;
-      case ORD_OP:
-         //must be CHAR
-         if (sub_tag != TYUNSIGNEDCHAR && sub_tag != TYSIGNEDCHAR) {
-           /* error("Incorrect type in ORD_OP");
-            return make_error_expr();
-         }
-
-         //since it returns int...I think the type needs to be changed
-         ret->type = ty_build_basic(TYSIGNEDLONGINT);
-         break;
-      case CHR_OP:
-         //converts byte value to char value...check type
-         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE ) {
-            error("Incorrect type in CHR_OP");
-            return make_error_expr();
-         }
-
-         //returns char so updated type
-         ret->type = ty_build_basic(TYUNSIGNEDCHAR);
-         break;
-      case UN_SUCC_OP:
-         //check type, must be ordinal type
-         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE && sub_tag != TYUNSIGNEDCHAR) {
-            error("Incorrect type in UN_SUCC_OP");
-            return make_error_expr();
-         }
-         break;
-      case UN_PRED_OP:
-         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE && sub_tag != TYUNSIGNEDCHAR) {
-            error("Incorrect type in UN_PRED_OP");
-            return make_error_expr();
-         }
-         break;
-      case UPLUS_OP:
-         //check type
-         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE) {
-            error("Incorrect type in UPLUS_OP");
-            return make_error_expr();
-         }
-         break;
-      case INDIR_OP:
-         //returns a pointer, not sure if any other errors/checks
-         ret->type = ty_query_ptr(sub->type, &id);
-      default:
-         break;
-   }
-   return ret;
-}//make_un_expr
-*/
-EXPR make_un_expr(EXPR_UNOP op, EXPR sub) {
-   /*new node variables & initial assignments*/
-   EXPR ret;
-   ret = (EXPR)malloc(sizeof(EXPR_NODE));
-   assert(ret != NULL);
-   ret->tag = UNOP;
-   ret->type = sub->type;
-   ret->u.unop.op = op;
-   ret->u.unop.operand = sub;
-   /*querying variables*/
-   TYPETAG sub_tag = ty_query(sub->type);
-   ST_ID id;
-   TYPE base_type,next;
-   long low, high;
-
-   //there was an infinite loop when creating a DEREF node
-   if (op == DEREF_OP) {
-      return ret;
-   }
-
-   //if op expects an r-value and sub is an l-value, add a DEREF node
-   if (op == ADDRESS_OP || op == NEW_OP) { //expect l-values
-      if (is_lval(sub) == FALSE) {
-         return make_error_expr();
-      }
-   }
-   else { //expect r-values
-      if (is_lval(sub) == TRUE) {
-         ret->u.unop.operand = make_un_expr(DEREF_OP,sub);
-      }
-   }
-
-   sub_tag = ty_query(sub->type);
-   //subexpression is unary-converted
-  /* if (is_lval(sub) == FALSE) {
-      if (sub_tag == TYFLOAT) {
-         EXPR convertedNode = make_un_expr(CONVERT_OP, sub);
-         convertedNode->type = ty_build_basic(TYDOUBLE);
-         ret->u.unop.operand = convertedNode;
-      }
-      else if (sub_tag == TYSUBRANGE) {
-         EXPR convertedNode = make_un_expr(CONVERT_OP, sub);
-         base_type = ty_query_subrange(sub->type, &low, &high);
-         convertedNode->type = base_type;
-         ret->u.unop.operand = convertedNode;
-      }
-   }*/
-
-   sub_tag = ty_query(sub->type);
-   //switch statement on op for error checking
-   switch (op) {
-      case CONVERT_OP:
-         break;
-      case DEREF_OP:
-         break;
-      case NEG_OP:
-         //must be of type TYSIGNEDLONGINT, TYDOUBLE
-         if (sub_tag != TYSIGNEDLONGINT &&  sub_tag != TYDOUBLE) {
-            error("Incorrect type in NEG_OP");
-            return make_error_expr();
-         }
-         break;
-      case ORD_OP:
-         //must be CHAR
-         if (sub_tag != TYUNSIGNEDCHAR && sub_tag != TYSIGNEDCHAR) {
-           /* error("Incorrect type in ORD_OP");
-            return make_error_expr();*/
-         }
-
-         //since it returns int...I think the type needs to be changed
-         ret->type = ty_build_basic(TYSIGNEDLONGINT);
-         break;
-      case CHR_OP:
-         //converts byte value to char value...check type
-         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE ) {
-            error("Incorrect type in CHR_OP");
-            return make_error_expr();
-         }
-
-         //returns char so updated type
-         ret->type = ty_build_basic(TYUNSIGNEDCHAR);
-         break;
-      case UN_SUCC_OP:
-         //check type, must be ordinal type
-         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE && sub_tag != TYUNSIGNEDCHAR) {
-            error("Incorrect type in UN_SUCC_OP");
-            return make_error_expr();
-         }
-         break;
-      case UN_PRED_OP:
-         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE && sub_tag != TYUNSIGNEDCHAR) {
-            error("Incorrect type in UN_PRED_OP");
-            return make_error_expr();
-         }
-         break;
-      case UPLUS_OP:
-         //check type
-         if (sub_tag != TYSIGNEDLONGINT && sub_tag != TYDOUBLE) {
-            error("Incorrect type in UPLUS_OP");
-            return make_error_expr();
-         }
-         break;
-      case INDIR_OP:
-         //returns a pointer, not sure if any other errors/checks
-         ret->type = ty_query_ptr(sub->type, &id);
-      default:
-         break;
-   }
-   return ret;
-}
-
-
 
 EXPR make_bin_expr(EXPR_BINOP op, EXPR left, EXPR right)
 {
@@ -1537,7 +1375,7 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
    //case1, if rhs non null, then return binop node with assign_op
    if (rhs != NULL) {
       //exception if id is id of current function
-      if (func_top >= 0 && id == func_stack_id[func_top]) {
+      if (id == func_stack_id[func_top] && func_top >= 0) {
          if (ty_query(ty_query_func(lhs->type, &params, &check)) != TYVOID) {
             //return type is nonvoid
             EXPR ret = make_un_expr(SET_RETURN_OP, rhs);
@@ -1600,7 +1438,31 @@ EXPR check_assign_or_proc_call(EXPR lhs, ST_ID id, EXPR rhs) {
    }
 }//end check_assign_or_proc_call
 
-
+BOOLEAN is_lval(EXPR expr) {
+   //first check tag of expr
+   if (expr->tag == LVAR || expr->tag == ARRAY_ACCESS) { //all LVARs are l-val
+      return TRUE;
+   }
+   else if (expr->tag == GID) {
+      if (ty_query(expr->type) == TYFUNC || ty_query(expr->type) == TYERROR) { //l-val only if data type
+         return FALSE;
+      }
+      else {
+         return TRUE;
+      }
+   }
+   else if (expr->tag == UNOP) {
+      if (expr->u.unop.op == INDIR_OP) { //l-val if indirection op
+         return TRUE;
+      }
+      else {
+         return FALSE;
+      }
+   }
+   else {
+      return FALSE;
+   }
+}//end is_lval
 
 void expr_free(EXPR expr) {
    if (expr->tag == UNOP) {
@@ -1641,6 +1503,9 @@ void expr_list_free (EXPR_LIST list) {
    free(list);
 }
 
+unsigned long get_value_range(TYPE type, long *low) {
+}
+
 
 void install_local_params(PARAM_LIST param)
 {
@@ -1674,141 +1539,4 @@ void install_local_params(PARAM_LIST param)
     param = param->next;
   }
 }
-
-EXPR make_array_access_expr(EXPR array, EXPR_LIST indices) {
-   //checks to make sure of type array
-   if (ty_query(array->type) != TYARRAY) {
-      error("Nonarray in array access expression");
-      return make_error_expr();
-   }
-
-   //variables for querying
-   TYPE array_type;
-   INDEX_LIST i;
-   EXPR_LIST test = indices;
-
-   array_type = ty_query_array(array->type, &i);
-
-   while (indices != NULL && i != NULL) {
-      //gets the r value, deref if l-val
-      if (is_lval(indices->expr) == TRUE) {
-         indices->expr = make_un_expr(DEREF_OP, indices->expr);
-      }
-
-      //checks type with "formal" type
-      if (ty_query(indices->expr->type) != TYSIGNEDLONGINT) {
-         error("Incompatible index type in array access");
-         return make_error_expr();
-      }
-
-      i = i->next;
-      indices = indices->next;
-   }
-
-   //checks that both indices are same length
-   if ((indices == NULL && i != NULL) || (indices != NULL && i == NULL)) {
-      error("indices not equal");
-      return make_error_expr();
-   }
-
-   //finally creates array_access node
-   EXPR ret;
-   ret = (EXPR)malloc(sizeof(EXPR_NODE));
-   assert(ret != NULL);
-   ret->tag = ARRAY_ACCESS;
-   ret->type = array_type;
-   ret->u.fcall_or_array_access.args_or_indices = test;
-   ret->u.fcall_or_array_access.function_or_array = array;
-
-   return ret;
-
-}// end make_array_access_expr
-
-VAL_LIST new_case_value(TYPETAG type, long lo, long hi) {
-   VAL_LIST ret;
-   ret = (VAL_LIST)malloc(sizeof(VAL_LIST_REC));
-   ret->lo = lo;
-   ret->hi = hi;
-   ret->type = type;
-   return ret;
-}// end new_case_value
-
-BOOLEAN check_case_values(TYPETAG type, VAL_LIST vals, VAL_LIST prev_vals) {
-   while (vals != NULL) {
-      //check type
-      if (vals->type != type) {
-         error("Case constant type does not match type of case expression");
-         return FALSE;
-      }
-      //check subrange values
-      if (vals->type == TYSUBRANGE) {
-         if (vals->lo > vals->hi) {
-            warning("Low value of subrange is greater than high value");
-            //return FALSE //only true if no errors, this is warning
-         }
-      }
-      //check for overlap
-   }
-   return TRUE;
-}// end check_case_values
-
-
-void case_value_list_free(VAL_LIST vals) {
-   if (vals->next != NULL) {
-      case_value_list_free(vals->next);
-   }
-   free(vals);
-}//end case_value_list_free
-
-BOOLEAN get_case_value(EXPR expr, long *val, TYPETAG *type) {
-   //check type
-   if (expr->tag == INTCONST) {
-      *type = ty_query(expr->type);
-      *val = expr->u.intval;
-      return TRUE;
-   }
-   else if (expr->tag == STRCONST) {
-      //try and convert
-      if (strlen(expr->u.strval) == 1) { //convert
-         *type = TYSIGNEDCHAR;
-         *val = expr->u.strval[0];
-         expr = make_intconst_expr(expr->u.strval[0], ty_build_basic(TYSIGNEDLONGINT));
-         return TRUE;
-      }
-      else { //error
-         error("STRCONST not length 1");
-         return FALSE;
-      }
-   }
-   else { //error
-      error("Case constant not of INTCONST type");
-   }
-}//end get_case_value
-
-BOOLEAN check_for_preamble(EXPR var, EXPR init, EXPR limit) {
-   TYPETAG var_type = ty_query(var->type);
-   //check lvalue
-   if (is_lval(var) == FALSE) {
-      error("Loop control variable not an l-value");
-      return FALSE;
-   }
-   //check if ordinal type
-   if (var_type != TYSIGNEDCHAR && var_type != TYUNSIGNEDCHAR && var_type != TYSIGNEDLONGINT) {
-      error("Loop control variable is not an ordinal type");
-      return FALSE;
-   }
-   //see if type matches, ignoring subranges for now
-   if (!ty_test_equality(var->type, init->type)) {
-      error("Types in loop do not match");
-      return FALSE;
-   }
-   else if (!ty_test_equality(var->type, limit->type)) {
-      error("Types in loop do not match");
-      return FALSE;
-   }
-
-   return TRUE;
-}//end check_for_preamble
-
-
 

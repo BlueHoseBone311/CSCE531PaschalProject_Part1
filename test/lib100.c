@@ -1,29 +1,78 @@
 #include <stdio.h>
-#include <stdarg.h>
 
-int Printf(char *format, ...)
+Print_nl()
 {
-    int ret;
-
-    va_list ap;
-    va_start(ap, format);
-    ret = vprintf(format, ap);
-    va_end(ap);
-    return ret;
+	printf("\n");
 }
 
-int Scanf(char *format, ...)
+Print_dot()
 {
-    int ret;
-
-    va_list ap;
-    va_start(ap, format);
-    ret = vscanf(format, ap);
-    va_end(ap);
-    return ret;
+	printf(".");
 }
 
-int Getchar()
+Print_even()
 {
-    return getchar();
+	printf("E");
+}
+
+Print_odd()
+{
+	printf("O");
+}
+
+Print_j()
+{
+	printf("j");
+}
+
+Print_i_j_values()
+{
+	extern int I,J;
+	printf("i = %d; j = %d\n",I,J);
+}
+
+Print_oops()
+{
+	printf("oops\n");
+}
+
+extern long Iaa[14][12];
+
+Print_iaa()
+{
+	int i, j;
+	printf("iaa =\n[\n");
+	for (i=0; i<14; i++) {
+		printf("  [ ");
+		for (j=0; j<12; j++)
+			printf("%4ld ", Iaa[i][j]);
+		printf("]\n");
+	}
+	printf("]\n");
+}
+
+extern double Raaa[3][6][4];
+
+Print_raaa()
+{
+	int i, j, k;
+	printf("raaa =\n[\n");
+	for (i=0; i<3; i++) {
+		printf("  [\n");
+		for (j=0; j<6; j++) {
+			printf("    [ ");
+			for (k=0; k<4; k++)
+				printf("%.6lf ", Raaa[i][j][k]);
+			printf("]\n");
+		}
+		printf("  ]\n");
+	}
+	printf("]\n");
+}
+
+extern double R;
+
+Print_r()
+{
+	printf("r = %.6lf\n", R);
 }
