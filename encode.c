@@ -787,23 +787,24 @@ char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit)
 
 	return var->u.strval;
 }
-#if 0
+
 void encode_dispatch(VAL_LIST vals, char * label)
 {
 	VAL_LIST val_node; 
 	val_node = vals; 
+	char * exit_match;
+	exit_match = exit_label_stack[exit_label_top];
 
 	while (val_node != NULL)
 	{
 		TYPETAG tp_tag;
-		char * exit_match;
 		long lo, hi;
 
-		tp_tag = vals->type;
-		lo = vals->lo;
-		hi = vals->hi;
+		tp_tag = val_node->type;
+		lo = val_node->lo;
+		hi = val_node->hi;
 
-		exit_match = exit_label_stack[exit_label_top];
+		
 
 		//ensure the correct type
 		if(tp_tag != TYSIGNEDINT || tp_tag != TYUNSIGNEDINT || tp_tag != TYSIGNEDLONGINT || tp_tag!= TYUNSIGNEDLONGINT)
@@ -812,10 +813,10 @@ void encode_dispatch(VAL_LIST vals, char * label)
 		}	
 		else 
 		{
-			/*low is equal to high: 
-			if(lo==high)
+			/*low is equal to high: */
+			if(lo==hi)
 			{
-				b_dispatch (B_EQ, tag, lo, exit_match, TRUE);
+				b_dispatch (B_EQ, tp_tag, lo, exit_match, TRUE);
 			}
 			else 
 			{
@@ -824,12 +825,11 @@ void encode_dispatch(VAL_LIST vals, char * label)
 
 				b_dispatch (B_LT, tp_tag, lo, l, TRUE);
 				b_dispatch (B_LE, tp_tag, hi, exit_match, TRUE);
-				b_lable(l);		
+				b_label(l);		
 			}	
 		}
-		val_node->next
+		val_node = val_node->next;
 	}
 	b_label(exit_match);
-	b_jump(match_exit)	
+	b_jump(exit_match);	
 }
-#endif
