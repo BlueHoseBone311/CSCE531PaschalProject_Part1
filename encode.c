@@ -1,20 +1,17 @@
  /*@Title   encode.c - size calculations and code generating functtions
  * @authors  Venugopal Boppa, Christopher A. Greer, Christian Merchant
  * @class   CSCE531
- * @Project Pascal Compiler Part III
- * @date    04-27-15
+ * @Project Pascal Compiler Part II
+ * @date    04-17-15
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "encode.h"
 
-<<<<<<< HEAD
 /*label stack and head for Project III*/
 //int exit_label_top = -1;
 //char* exit_label_stack[100];
-=======
->>>>>>> origin/master
 
 static int calc_array_size(TYPE array_type, int align);
 static TYPE get_array_align_element(TYPE array);
@@ -425,7 +422,7 @@ void encode_expr(EXPR expr)
 	case ARRAY_ACCESS: break;
 	case LFUN: break;
     case ERROR: break;
-    default: bug("Error: Hit default in encode_expr");
+    default: bug("Hit default in encode_expr with typetag (%d)", expr->tag);
 
   }//End Switch
 }//End encode_expr
@@ -518,7 +515,7 @@ void encode_unop(EXPR_UNOP op, EXPR expr)
 						b_convert(tag, rval_tag);
 					}
 					break;
-    default: bug("Error: Hit default in encode_unop");
+    //default: bug("Hit default in encode_unop with unop tag (%d)",op);
   }
 }
 
@@ -531,9 +528,6 @@ void encode_binop(EXPR_BINOP b_op, EXPR expr)
   type_tag = ty_query(expr->type);
   left_type_tag = ty_query(expr->u.binop.left->type);
   right_type_tag = ty_query(expr->u.binop.right->type);
-
-ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, REALDIV_OP, EQ_OP, LESS_OP, LE_OP,
-    GE_OP, GREATER_OP, ASSIGN_OP, NE_OP, BIN_SUCC_OP, BIN_PRED_OP;
 
   switch (b_op)
   {
@@ -562,7 +556,7 @@ ADD_OP, SUB_OP, MUL_OP, DIV_OP, MOD_OP, REALDIV_OP, EQ_OP, LESS_OP, LE_OP,
     		        b_assign(left_type_tag);
      			    b_pop();
    		            break;
-   	default: bug("Error: Hit default in encode_binop");
+   	default: bug("Hit default in encode_binop with binop tag (%d)",b_op);
   }
 }
 
@@ -678,7 +672,6 @@ void encode_funct_call(EXPR funct, EXPR_LIST args)
    b_funcall_by_name(funct_global_name,ty_query(funct_ret_type));
 }
 
-<<<<<<< HEAD
 void new_exit_label_push()
 {
 	char *label = new_symbol();
@@ -837,5 +830,3 @@ void encode_dispatch(VAL_LIST vals, char * label)
 			b_label(exit);
 	}
 }//end encode_dispatch
-=======
->>>>>>> origin/master

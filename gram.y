@@ -829,17 +829,16 @@ while_statement:
                                              b_label(start_while);
                                              encode_expr($2);
                                              $<y_string>$ = start_while;
+                                             
+                                          }
+                                          {
                                              b_cond_jump(TYSIGNEDCHAR,B_ZERO,current_exit_label_peek());
                                           }
-                                          else 
-                                          {
-                                             error("Non-Boolean expression");
-                                          }
                                         }
-   LEX_DO statement                    { if (ty_query($2->type) == TYSIGNEDCHAR) {
-                                      b_jump($<y_string>4); //jumps to start of loop
-                                      b_label(old_exit_label_pop());
-                                   }
+   LEX_DO statement                    { //if (ty_query($2->type) == TYSIGNEDCHAR) {
+                                      b_jump($<y_string>3); //jumps to start of loop
+                                     // b_label(old_exit_label_pop());
+                                   //}
                                  }
   ;
 
