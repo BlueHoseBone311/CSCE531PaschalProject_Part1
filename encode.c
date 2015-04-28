@@ -791,42 +791,44 @@ char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit)
 void encode_dispatch(VAL_LIST vals, char * label)
 {
 
-	TYPETAG tp_tag;
-	char * exit;
-	long lo, hi;
+	VAL_LIST val_node; 
+	val_node = vals; 
+	char * exit_match;
+	exit_match = exit_label_stack[exit_label_top];
 
-	tp_tag = vals->type;
-	lo = vals->lo;
-	hi = vals->hi;
-
-	exit = exit_label_stack[exit_label_top];
-
-	//ensure the correct type
-	if(tp_tag != TYSIGNEDINT || tp_tag != TYUNSIGNEDINT || tp_tag != TYSIGNEDLONGINT || tp_tag!= TYUNSIGNEDLONGINT)
+	while (val_node != NULL)
 	{
-		error("Wrong type comparison");
-	}
-	else
-	{
-		if(lo==hi)
+		TYPETAG tp_tag;
+		long lo, hi;
+
+		tp_tag = val_node->type;
+		lo = val_node->lo;
+		hi = val_node->hi;
+		
+		//ensure the correct type
+		if(tp_tag != TYSIGNEDINT || tp_tag != TYUNSIGNEDINT || tp_tag != TYSIGNEDLONGINT || tp_tag!= TYUNSIGNEDLONGINT)
 		{
-			b_dispatch (B_EQ, tp_tag, lo, exit, TRUE);
-		}
-		else if (lo < hi)
+			error("Wrong type comparison");
+		}	
+		else 
 		{
-			new_exit_label_push();
-			char * l = exit_label_stack[exit_label_top];
+			/*low is equal to high: */
+			if(lo==hi)
+			{
+				b_dispatch (B_EQ, tp_tag, lo, exit_match, TRUE);
+			}
+			else 
+			{
+				new_exit_label_push();
+				char * l = exit_label_stack[exit_label_top];
 
-			b_dispatch (B_LT, tp_tag, lo, l, TRUE);
-
-			//if(b_cond_jump (tp_tag, B_NONZERO, l))
-			//{
-				b_dispatch (B_GT, tp_tag, hi, exit, TRUE);
-			//}
-
-			b_label(l);
-
+				b_dispatch (B_LT, tp_tag, lo, l, TRUE);
+				b_dispatch (B_LE, tp_tag, hi, exit_match, TRUE);
+				b_label(l);		
+			}	
 		}
-			b_label(exit);
+		val_node = val_node->next;
 	}
-}//end encode_dispatch
+	b_label(exit_match);
+	b_jump(exit_match);	
+}

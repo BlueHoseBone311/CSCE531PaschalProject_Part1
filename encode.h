@@ -48,4 +48,6 @@ BOOLEAN check_exit_label_stack();
 
 char * encode_for_preamble(EXPR var, EXPR init, int dir, EXPR limit);
 
+
+void encode_dispatch(VAL_LIST vals, char * label);
 #endif
