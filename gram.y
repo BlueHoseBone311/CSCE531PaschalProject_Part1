@@ -822,7 +822,7 @@ repeat_statement:
   ;
 
 while_statement:
-    LEX_WHILE boolean_expression LEX_DO { if (ty_query($2->type) == TYSIGNEDCHAR) 
+    LEX_WHILE boolean_expression {if (ty_query($2->type) == TYSIGNEDCHAR) 
                                           {
                                              new_exit_label_push();
                                              char* start_while = new_symbol();
@@ -836,7 +836,7 @@ while_statement:
                                              error("Non-Boolean expression");
                                           }
                                         }
-    statement                    { if (ty_query($2->type) == TYSIGNEDCHAR) {
+   LEX_DO statement                    { if (ty_query($2->type) == TYSIGNEDCHAR) {
                                       b_jump($<y_string>4); //jumps to start of loop
                                       b_label(old_exit_label_pop());
                                    }
